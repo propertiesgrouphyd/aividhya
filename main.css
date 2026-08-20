@@ -166,6 +166,7 @@ button:focus-visible {
 
   display: flex;
   align-items: center;
+
   gap: 12px;
 
   cursor: pointer;
@@ -173,30 +174,20 @@ button:focus-visible {
   text-align: left;
 }
 
-.brand-mark {
+.brand-logo {
   width: 44px;
   height: 44px;
 
-  display: grid;
-  place-items: center;
+  flex: 0 0 44px;
+
+  display: block;
+
+  object-fit: contain;
+  object-position: center;
 
   border-radius: 13px;
 
-  background:
-    linear-gradient(
-      145deg,
-      var(--gold-light),
-      var(--gold)
-    );
-
-  color: #17120a;
-
-  font-family: Arial, sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-
-  box-shadow:
-    0 5px 15px rgba(201, 154, 46, .22);
+  background: transparent;
 }
 
 .brand-copy {
@@ -210,6 +201,7 @@ button:focus-visible {
   color: var(--ink);
 
   font-family: Arial, sans-serif;
+
   font-size: 15px;
   font-weight: 900;
 
@@ -222,12 +214,12 @@ button:focus-visible {
   color: var(--gold-dark);
 
   font-family: Arial, sans-serif;
+
   font-size: 16px;
   font-weight: 800;
 
   letter-spacing: -.02em;
 }
-
 
 /* =========================================================
    TOP BAR PILLS
@@ -614,7 +606,7 @@ main {
     linear-gradient(
       145deg,
       #efd184,
-      var(--gold);
+      var(--gold)
     );
 }
 
@@ -1159,31 +1151,71 @@ main {
 
 .footer-brand {
   display: flex;
-  flex-direction: column;
+  align-items: center;
 
-  line-height: 1.4;
+  gap: 11px;
+
+  min-width: 0;
 }
 
-.footer-brand strong {
+.footer-logo {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: block;
+
+  object-fit: contain;
+  object-position: center;
+
+  border-radius: 10px;
+
+  background: transparent;
+}
+
+.footer-brand-copy {
+  display: flex;
+  flex-direction: column;
+
+  line-height: 1.2;
+}
+
+.footer-brand-copy strong {
   color: var(--gold-dark);
 
   font-family: Arial, sans-serif;
+
   font-size: 13px;
   font-weight: 850;
 
   letter-spacing: .04em;
 }
 
-.footer-brand span,
-.footer-meta {
+.footer-brand-copy span {
+  margin-top: 3px;
+
   color: var(--muted);
 
-  font-size: 12px;
+  font-family: Arial, sans-serif;
+
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.footer-meta {
+.footer-copyright {
+  flex: 0 0 auto;
+
+  color: var(--muted);
+
   font-family: Arial, sans-serif;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
 }
+
 
 
 /* =========================================================
@@ -1240,13 +1272,14 @@ main {
     gap: 9px;
   }
 
-  .brand-mark {
+
+  .brand-logo {
     width: 40px;
     height: 40px;
 
-    border-radius: 11px;
+    flex-basis: 40px;
 
-    font-size: 19px;
+    border-radius: 11px;
   }
 
   .brand-name {
@@ -1523,14 +1556,34 @@ main {
   .footer-inner {
     width: calc(100% - 24px);
 
-    min-height: 95px;
+    min-height: 88px;
 
-    align-items: flex-start;
-    justify-content: center;
+    gap: 12px;
+  }
 
-    flex-direction: column;
+  .footer-logo {
+    width: 34px;
+    height: 34px;
 
-    gap: 5px;
+    flex-basis: 34px;
+
+    border-radius: 9px;
+  }
+
+  .footer-brand {
+    gap: 9px;
+  }
+
+  .footer-brand-copy strong {
+    font-size: 12px;
+  }
+
+  .footer-brand-copy span {
+    font-size: 10px;
+  }
+
+  .footer-copyright {
+    font-size: 10px;
   }
 
 }
