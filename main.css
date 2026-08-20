@@ -1556,7 +1556,7 @@ main {
   .footer-inner {
     width: calc(100% - 24px);
 
-    min-height: 62px;
+    min-height: 88px;
 
     gap: 12px;
   }
