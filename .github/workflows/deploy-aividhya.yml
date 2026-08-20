@@ -1,0 +1,376 @@
+name: VIDHWAAN AIVidhya PWA DEPLOY
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vidhwaan-aividhya-deploy
+  cancel-in-progress: true
+
+jobs:
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_NAME: vidhwaan-aividhya
+
+    steps:
+
+      # ==========================================
+      # CHECKOUT
+      # ==========================================
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+
+      # ==========================================
+      # NODE
+      # ==========================================
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+
+      # ==========================================
+      # INSTALL BUILD TOOLS
+      # ==========================================
+
+      - name: Install Protection Tools
+        run: |
+          npm install -g wrangler
+          npm install -g terser
+          npm install -g javascript-obfuscator
+          npm install -g clean-css-cli
+          npm install -g html-minifier-terser
+
+
+      # ==========================================
+      # VALIDATE SOURCE
+      # ==========================================
+
+      - name: Validate Application
+        run: |
+          node --check app.js
+          node --check sw.js
+          npm run validate
+
+          node --input-type=module <<'NODE'
+          import fs from "fs";
+
+          const required = [
+            "index.html",
+            "main.css",
+            "app.js",
+            "sw.js",
+            "manifest.json",
+            "favicon.ico",
+            "icons/logo.png",
+            "icons/icon-192.png",
+            "icons/icon-512.png"
+          ];
+
+          for (const file of required) {
+            if (!fs.existsSync(file)) {
+              throw new Error(`Missing required file: ${file}`);
+            }
+          }
+
+          console.log("AIVidhya source validation: PASSED");
+          NODE
+
+
+      # ==========================================
+      # PREPARE DIST
+      # ==========================================
+
+      - name: Prepare Dist
+        run: |
+
+          rm -rf dist
+
+          mkdir -p dist
+
+          cp index.html dist/
+          cp main.css dist/
+          cp app.js dist/
+          cp sw.js dist/
+          cp manifest.json dist/
+          cp favicon.ico dist/
+
+          cp -r icons dist/
+
+          mkdir -p dist/data
+
+          cp data/day-*.json dist/data/
+
+
+      # ==========================================
+      # MINIFY HTML
+      # ==========================================
+
+      - name: Minify HTML
+        run: |
+
+          html-minifier-terser \
+            --collapse-whitespace \
+            --remove-comments \
+            --remove-redundant-attributes \
+            --remove-script-type-attributes \
+            --remove-style-link-type-attributes \
+            --use-short-doctype \
+            dist/index.html \
+            -o dist/index.html
+
+
+      # ==========================================
+      # MINIFY CSS
+      # ==========================================
+
+      - name: Minify CSS
+        run: |
+
+          cleancss \
+            -O2 \
+            dist/main.css \
+            -o dist/main.css
+
+
+      # ==========================================
+      # MINIFY JAVASCRIPT
+      # ==========================================
+
+      - name: Minify JavaScript
+        run: |
+
+          terser dist/app.js \
+            --compress \
+            --mangle \
+            -o dist/app.js
+
+
+      # ==========================================
+      # OBFUSCATE JAVASCRIPT
+      # ==========================================
+
+      - name: Obfuscate JavaScript
+        run: |
+
+          javascript-obfuscator dist/app.js \
+            --output dist/app.js \
+            --compact true \
+            --control-flow-flattening true \
+            --control-flow-flattening-threshold 0.75 \
+            --dead-code-injection true \
+            --dead-code-injection-threshold 0.2 \
+            --disable-console-output true \
+            --identifier-names-generator hexadecimal \
+            --rename-globals false \
+            --self-defending true \
+            --split-strings true \
+            --string-array true \
+            --string-array-encoding base64
+
+
+      # ==========================================
+      # CACHE VERSION
+      # ==========================================
+
+      - name: Generate Asset Version
+        run: |
+
+          VERSION=$(date +%s)
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+          echo "Asset version: $VERSION"
+
+
+      # ==========================================
+      # CACHE BUST HTML ASSETS
+      # ==========================================
+
+      - name: Apply Asset Cache Busting
+        run: |
+
+          sed -i \
+            "s|href=\"./main.css\"|href=\"./main.css?v=$VERSION\"|g" \
+            dist/index.html
+
+          sed -i \
+            "s|src=\"./app.js\"|src=\"./app.js?v=$VERSION\"|g" \
+            dist/index.html
+
+          sed -i \
+            "s|href=\"./manifest.json\"|href=\"./manifest.json?v=$VERSION\"|g" \
+            dist/index.html
+
+
+      # ==========================================
+      # PRODUCTION HEADERS
+      # ==========================================
+
+      - name: Create Cloudflare Headers
+        run: |
+
+          cat > dist/_headers <<'EOF'
+
+          /*
+            X-Content-Type-Options: nosniff
+            X-Frame-Options: SAMEORIGIN
+            Referrer-Policy: strict-origin-when-cross-origin
+            Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+          /index.html
+            Cache-Control: no-cache, max-age=0, must-revalidate
+
+          /manifest.json
+            Cache-Control: no-cache, max-age=0, must-revalidate
+
+          /sw.js
+            Cache-Control: no-cache, max-age=0, must-revalidate
+
+          /data/*
+            Cache-Control: no-store, max-age=0, must-revalidate
+
+          /app.js
+            Cache-Control: public, max-age=31536000, immutable
+
+          /main.css
+            Cache-Control: public, max-age=31536000, immutable
+
+          /icons/*
+            Cache-Control: public, max-age=31536000, immutable
+
+          /favicon.ico
+            Cache-Control: public, max-age=31536000, immutable
+          EOF
+
+
+      # ==========================================
+      # VERIFY DIST
+      # ==========================================
+
+      - name: Verify Production Build
+        run: |
+
+          echo "=============================================="
+          echo "AIVIDHYA PRODUCTION BUILD"
+          echo "=============================================="
+
+          find dist -maxdepth 2 -type f | sort
+
+          echo
+          echo "=============================================="
+          echo "LESSON FILES"
+          echo "=============================================="
+
+          ls -lh dist/data/day-*.json
+
+          echo
+          echo "=============================================="
+          echo "BUILD SIZES"
+          echo "=============================================="
+
+          du -sh dist
+          du -h \
+            dist/index.html \
+            dist/main.css \
+            dist/app.js \
+            dist/sw.js
+
+          echo
+          echo "=============================================="
+          echo "BUILD VALIDATION"
+          echo "=============================================="
+
+          test -f dist/index.html
+          test -f dist/main.css
+          test -f dist/app.js
+          test -f dist/sw.js
+          test -f dist/manifest.json
+          test -f dist/favicon.ico
+          test -f dist/icons/logo.png
+          test -f dist/icons/icon-192.png
+          test -f dist/icons/icon-512.png
+
+          echo "Production build: PASSED"
+
+
+      # ==========================================
+      # CREATE CLOUDFLARE PAGES PROJECT
+      # ==========================================
+
+      - name: Create Cloudflare Project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+        run: |
+
+          if ! wrangler pages project list | grep -q "$PROJECT_NAME"
+          then
+
+            echo "Creating Cloudflare Pages project..."
+
+            wrangler pages project create "$PROJECT_NAME" \
+              --production-branch main
+
+          else
+
+            echo "Cloudflare Pages project already exists."
+
+          fi
+
+
+      # ==========================================
+      # DEPLOY
+      # ==========================================
+
+      - name: Deploy Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+        run: |
+
+          wrangler pages deploy dist \
+            --project-name="$PROJECT_NAME"
+
+
+      # ==========================================
+      # SUCCESS
+      # ==========================================
+
+      - name: Deployment Success
+        run: |
+
+          echo "=============================================="
+          echo " VIDHWAAN AIVidhya DEPLOYMENT SUCCESS"
+          echo "=============================================="
+
+          echo "Project : $PROJECT_NAME"
+          echo "Version : $VERSION"
+
+          echo
+          echo "PWA:"
+          echo "✓ HTML minified"
+          echo "✓ CSS minified"
+          echo "✓ JavaScript minified"
+          echo "✓ JavaScript obfuscated"
+          echo "✓ Cache busting enabled"
+          echo "✓ Production headers created"
+          echo "✓ Lesson data deployed"
+          echo "✓ PWA service worker preserved"
+          echo "✓ Cloudflare Pages deployment complete"
