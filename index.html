@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="te">
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -11,6 +12,13 @@
   <meta
     name="theme-color"
     content="#ffffff"
+    media="(prefers-color-scheme: light)"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+    media="(prefers-color-scheme: dark)"
   >
 
   <meta
@@ -24,8 +32,14 @@
   >
 
   <meta name="author" content="VIDHWAAN">
-  <meta name="robots" content="index, follow, max-image-preview:large">
+
+  <meta
+    name="robots"
+    content="index, follow, max-image-preview:large"
+  >
+
   <meta name="googlebot" content="index, follow">
+
   <meta name="application-name" content="VIDHWAAN AIVidhya">
 
   <meta
@@ -48,9 +62,8 @@
     content="yes"
   >
 
-  <!-- =====================================================
-       ICONS / PWA
-       ===================================================== -->
+
+  <!-- FAVICON -->
 
   <link
     rel="icon"
@@ -65,19 +78,21 @@
     href="./icons/icon-192.png"
   >
 
-  <link
-    rel="apple-touch-icon"
-    href="./icons/icon-192.png"
-  >
+
+  <!-- PWA -->
 
   <link
     rel="manifest"
     href="./manifest.json"
   >
 
-  <!-- =====================================================
-       SEO
-       ===================================================== -->
+  <link
+    rel="apple-touch-icon"
+    href="./icons/icon-192.png"
+  >
+
+
+  <!-- SEO -->
 
   <link
     rel="canonical"
@@ -88,9 +103,8 @@
     VIDHWAAN AIVidhya — 365-Day AI Learning Journey
   </title>
 
-  <!-- =====================================================
-       OPEN GRAPH
-       ===================================================== -->
+
+  <!-- OPEN GRAPH -->
 
   <meta
     property="og:type"
@@ -132,9 +146,8 @@
     content="512"
   >
 
-  <!-- =====================================================
-       TWITTER / X
-       ===================================================== -->
+
+  <!-- TWITTER / X -->
 
   <meta
     name="twitter:card"
@@ -156,9 +169,8 @@
     content="./icons/icon-512.png"
   >
 
-  <!-- =====================================================
-       STRUCTURED DATA
-       ===================================================== -->
+
+  <!-- STRUCTURED DATA -->
 
   <script type="application/ld+json">
   {
@@ -191,35 +203,39 @@
   }
   </script>
 
-  <link rel="stylesheet" href="./main.css">
+
+  <link rel="stylesheet" href="main.css">
+
 </head>
 
 <body>
 
+  <!-- =========================================
+       APPLICATION
+  ========================================== -->
+
   <div class="app-shell">
 
-    <!-- ===================================================
-         PREMIUM TOP NAVIGATION
-         =================================================== -->
+    <!-- =======================================
+         TOP NAVIGATION
+    ======================================== -->
 
     <header class="topbar">
 
       <div class="topbar-inner">
 
-        <a
+        <button
           class="brand"
-          href="./"
+          id="brandButton"
+          type="button"
           aria-label="VIDHWAAN AIVidhya home"
         >
 
-          <span class="brand-mark">
-            <img
-              src="./icons/logo.png"
-              alt=""
-              width="44"
-              height="44"
-            >
-          </span>
+          <img
+            class="brand-logo"
+            src="./icons/logo.png"
+            alt="VIDHWAAN"
+          >
 
           <span class="brand-copy">
 
@@ -233,17 +249,17 @@
 
           </span>
 
-        </a>
+        </button>
 
 
         <div class="topbar-actions">
 
-          <span class="topbar-pill topbar-pill-gold">
-            <span>365 Days</span>
+          <span class="topbar-pill">
+            365 DAYS
           </span>
 
-          <span class="topbar-pill">
-            <span>AI Learning</span>
+          <span class="topbar-pill topbar-pill-gold">
+            AI LEARNING
           </span>
 
         </div>
@@ -253,15 +269,15 @@
     </header>
 
 
-    <!-- ===================================================
-         MAIN APPLICATION
-         =================================================== -->
+    <!-- =======================================
+         MAIN CONTENT
+    ======================================== -->
 
-    <main>
+    <main id="mainContent">
 
-      <!-- =================================================
-           COURSE NAVIGATOR
-           ================================================= -->
+      <!-- =====================================
+           COURSE HOME / DAY NAVIGATOR
+      ====================================== -->
 
       <section
         id="dayNavigator"
@@ -274,7 +290,7 @@
           <div class="course-hero-copy">
 
             <div class="eyebrow">
-              DAILY AI EDUCATION
+              VIDHWAAN AIVidhya
             </div>
 
             <h1 id="courseTitle">
@@ -282,7 +298,7 @@
             </h1>
 
             <p class="course-description">
-              రోజుకు ఒక పాఠం · ఉదయం 6:00 గంటలకు అందుబాటులోకి వస్తుంది
+              రోజుకు ఒక పాఠం · ప్రతిరోజూ ఉదయం 6:00 గంటలకు కొత్త పాఠం
             </p>
 
           </div>
@@ -294,73 +310,38 @@
               TODAY
             </span>
 
-            <span
+            <strong
               id="todayLabel"
               class="today-panel-date"
-              aria-live="polite"
             >
               Loading...
-            </span>
+            </strong>
 
           </div>
 
         </div>
 
 
-        <!-- COURSE PROGRESS -->
-
-        <div class="course-progress">
-
-          <div class="progress-heading">
-
-            <span>
-              Your AI Learning Journey
-            </span>
-
-            <span id="progressText">
-              0 / 365 days
-            </span>
-
-          </div>
-
-          <div
-            class="progress-track"
-            aria-hidden="true"
-          >
-            <div
-              id="progressBar"
-              class="progress-bar"
-              style="width:0%"
-            ></div>
-          </div>
-
-        </div>
-
-
-        <!-- DAYS HEADING -->
+        <!-- Day navigation -->
 
         <div class="days-heading">
 
           <div>
-
             <h2>
-              365 Days of AI Learning
+              Learning Days
             </h2>
 
             <p>
-              Choose a day to begin or continue learning.
+              ప్రతి రోజు ఒక్కో పాఠాన్ని పూర్తి చేయండి
             </p>
-
           </div>
 
           <span class="days-count">
-            365 LESSONS
+            1 — 365
           </span>
 
         </div>
 
-
-        <!-- DAY GRID -->
 
         <div
           id="dayGrid"
@@ -371,13 +352,10 @@
 
         <div class="navigator-note">
 
-          <span
-            class="navigator-note-dot"
-            aria-hidden="true"
-          ></span>
+          <span class="navigator-note-dot"></span>
 
           <span>
-            ప్రతి రోజు ఒక కొత్త AI పాఠం మీ అభ్యాస ప్రయాణాన్ని ముందుకు తీసుకెళ్తుంది.
+            పాఠాలు వరుసగా ప్రతిరోజూ ఉదయం 6:00 గంటలకు అందుబాటులోకి వస్తాయి
           </span>
 
         </div>
@@ -385,15 +363,15 @@
       </section>
 
 
-      <!-- =================================================
+      <!-- =====================================
            LESSON VIEW
-           ================================================= -->
+      ====================================== -->
 
       <section
         id="lessonView"
         class="lesson-view"
         hidden
-        aria-label="AI lesson"
+        aria-live="polite"
       >
 
         <div class="lesson-topbar">
@@ -404,15 +382,14 @@
             type="button"
           >
             <span aria-hidden="true">←</span>
-            <span>వెనక్కి</span>
+            <span>అన్ని రోజులు</span>
           </button>
 
           <span
             id="lessonDayBadge"
             class="lesson-day-badge"
-            hidden
           >
-            AI LESSON
+            DAY
           </span>
 
         </div>
@@ -426,9 +403,9 @@
       </section>
 
 
-      <!-- =================================================
+      <!-- =====================================
            STATUS VIEW
-           ================================================= -->
+      ====================================== -->
 
       <section
         id="statusView"
@@ -439,10 +416,7 @@
 
         <div class="status-card">
 
-          <div
-            class="status-icon"
-            aria-hidden="true"
-          >
+          <div class="status-icon">
             !
           </div>
 
@@ -458,7 +432,7 @@
             type="button"
           >
             <span aria-hidden="true">←</span>
-            <span>వెనక్కి</span>
+            <span>అన్ని రోజులు</span>
           </button>
 
         </div>
@@ -468,9 +442,9 @@
     </main>
 
 
-    <!-- ===================================================
-         PREMIUM FOOTER
-         =================================================== -->
+    <!-- =======================================
+         FOOTER
+    ======================================== -->
 
     <footer class="site-footer">
 
@@ -478,49 +452,29 @@
 
         <div class="footer-brand">
 
-          <span class="footer-brand-mark">
+          <img
+            class="footer-logo"
+            src="./icons/logo.png"
+            alt="VIDHWAAN"
+          >
 
-            <img
-              src="./icons/logo.png"
-              alt=""
-              width="36"
-              height="36"
-            >
-
-          </span>
-
-          <span class="footer-brand-copy">
+          <div class="footer-brand-copy">
 
             <strong>
-              VIDHWAAN AIVidhya
+              VIDHWAAN
             </strong>
 
             <span>
-              365-Day AI Learning Journey
+              AIVidhya
             </span>
 
-          </span>
+          </div>
 
         </div>
 
 
-        <div class="footer-meta">
-
-          <span>
-            Learn AI. Build the future.
-          </span>
-
-          <span
-            class="footer-separator"
-            aria-hidden="true"
-          >
-            •
-          </span>
-
-          <span>
-            VIDHWAAN
-          </span>
-
+        <div class="footer-copyright">
+          © VIDHWAAN
         </div>
 
       </div>
@@ -530,9 +484,12 @@
   </div>
 
 
-  <!-- =====================================================
-       PWA INSTALL BUTTON
-       ===================================================== -->
+  <!-- =========================================
+       APPLICATION SCRIPT
+  ========================================== -->
+
+
+  <!-- PWA INSTALL BUTTON -->
 
   <button
     id="pwaInstallButton"
@@ -541,13 +498,7 @@
     aria-label="Install VIDHWAAN AIVidhya"
     hidden
   >
-
-    <span
-      class="pwa-install-icon"
-      aria-hidden="true"
-    >
-      ↓
-    </span>
+    <span class="pwa-install-icon" aria-hidden="true">↓</span>
 
     <span class="pwa-install-text">
 
@@ -564,26 +515,45 @@
   </button>
 
 
-  <!-- =====================================================
-       APPLICATION JAVASCRIPT
-       ===================================================== -->
+  <script
+    src="app.js"
+    defer
+  ></script>
 
-  <script src="./app.js" defer></script>
 
-
-  <!-- =====================================================
-       SERVICE WORKER
-       ===================================================== -->
+  <!-- PWA SERVICE WORKER -->
 
   <script>
     if ("serviceWorker" in navigator) {
+
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js", {
-          scope: "./"
-        }).catch(() => {});
+
+        navigator.serviceWorker
+          .register("./sw.js", {
+            scope: "./"
+          })
+          .then(registration => {
+
+            console.log(
+              "VIDHWAAN AIVidhya service worker registered:",
+              registration.scope
+            );
+
+          })
+          .catch(error => {
+
+            console.error(
+              "Service worker registration failed:",
+              error
+            );
+
+          });
+
       });
+
     }
   </script>
+
 
 </body>
 </html>
