@@ -1046,3 +1046,120 @@
   }
 
 })();
+
+
+/* =========================================================
+   VIDHWAAN AIVidhya — NATIVE PWA INSTALL
+   ========================================================= */
+
+(() => {
+  let deferredInstallPrompt = null;
+
+  const installButton =
+    document.getElementById("pwaInstallButton");
+
+  if (!installButton) {
+    return;
+  }
+
+
+  /*
+   * Chrome / Edge / Android:
+   * Browser provides the native install prompt.
+   */
+
+  window.addEventListener(
+    "beforeinstallprompt",
+    event => {
+
+      event.preventDefault();
+
+      deferredInstallPrompt = event;
+
+      installButton.hidden = false;
+    }
+  );
+
+
+  /*
+   * User taps Install.
+   */
+
+  installButton.addEventListener(
+    "click",
+    async () => {
+
+      if (!deferredInstallPrompt) {
+        return;
+      }
+
+      const promptEvent =
+        deferredInstallPrompt;
+
+      deferredInstallPrompt = null;
+
+      installButton.hidden = true;
+
+      try {
+
+        await promptEvent.prompt();
+
+        const result =
+          await promptEvent.userChoice;
+
+        if (
+          result &&
+          result.outcome === "accepted"
+        ) {
+          console.log(
+            "VIDHWAAN AIVidhya installed."
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "PWA installation failed:",
+          error
+        );
+
+      }
+    }
+  );
+
+
+  /*
+   * Installation completed through the browser.
+   */
+
+  window.addEventListener(
+    "appinstalled",
+    () => {
+
+      deferredInstallPrompt = null;
+
+      installButton.hidden = true;
+
+      console.log(
+        "VIDHWAAN AIVidhya PWA installation complete."
+      );
+    }
+  );
+
+
+  /*
+   * If already running as an installed PWA,
+   * never show the browser install control.
+   */
+
+  const isStandalone =
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) {
+    installButton.hidden = true;
+  }
+
+})();
