@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="te">
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -12,13 +11,6 @@
   <meta
     name="theme-color"
     content="#ffffff"
-    media="(prefers-color-scheme: light)"
-  >
-
-  <meta
-    name="theme-color"
-    content="#ffffff"
-    media="(prefers-color-scheme: dark)"
   >
 
   <meta
@@ -32,14 +24,8 @@
   >
 
   <meta name="author" content="VIDHWAAN">
-
-  <meta
-    name="robots"
-    content="index, follow, max-image-preview:large"
-  >
-
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="googlebot" content="index, follow">
-
   <meta name="application-name" content="VIDHWAAN AIVidhya">
 
   <meta
@@ -62,8 +48,9 @@
     content="yes"
   >
 
-
-  <!-- FAVICON -->
+  <!-- =====================================================
+       ICONS / PWA
+       ===================================================== -->
 
   <link
     rel="icon"
@@ -78,21 +65,19 @@
     href="./icons/icon-192.png"
   >
 
-
-  <!-- PWA -->
+  <link
+    rel="apple-touch-icon"
+    href="./icons/icon-192.png"
+  >
 
   <link
     rel="manifest"
     href="./manifest.json"
   >
 
-  <link
-    rel="apple-touch-icon"
-    href="./icons/icon-192.png"
-  >
-
-
-  <!-- SEO -->
+  <!-- =====================================================
+       SEO
+       ===================================================== -->
 
   <link
     rel="canonical"
@@ -103,8 +88,9 @@
     VIDHWAAN AIVidhya — 365-Day AI Learning Journey
   </title>
 
-
-  <!-- OPEN GRAPH -->
+  <!-- =====================================================
+       OPEN GRAPH
+       ===================================================== -->
 
   <meta
     property="og:type"
@@ -146,8 +132,9 @@
     content="512"
   >
 
-
-  <!-- TWITTER / X -->
+  <!-- =====================================================
+       TWITTER / X
+       ===================================================== -->
 
   <meta
     name="twitter:card"
@@ -169,8 +156,9 @@
     content="./icons/icon-512.png"
   >
 
-
-  <!-- STRUCTURED DATA -->
+  <!-- =====================================================
+       STRUCTURED DATA
+       ===================================================== -->
 
   <script type="application/ld+json">
   {
@@ -203,161 +191,348 @@
   }
   </script>
 
-
-  <link rel="stylesheet" href="main.css">
-
+  <link rel="stylesheet" href="./main.css">
 </head>
-
 
 <body>
 
-  <header class="topbar">
+  <div class="app-shell">
 
-    <div class="brand">
+    <!-- ===================================================
+         PREMIUM TOP NAVIGATION
+         =================================================== -->
 
-      <div class="brand-mark">
-        V
-      </div>
+    <header class="topbar">
 
-      <div class="brand-text">
+      <div class="topbar-inner">
 
-        <div class="brand-name">
-          VIDHWAAN
+        <a
+          class="brand"
+          href="./"
+          aria-label="VIDHWAAN AIVidhya home"
+        >
+
+          <span class="brand-mark">
+            <img
+              src="./icons/logo.png"
+              alt=""
+              width="44"
+              height="44"
+            >
+          </span>
+
+          <span class="brand-copy">
+
+            <span class="brand-name">
+              VIDHWAAN
+            </span>
+
+            <span class="brand-product">
+              AIVidhya
+            </span>
+
+          </span>
+
+        </a>
+
+
+        <div class="topbar-actions">
+
+          <span class="topbar-pill topbar-pill-gold">
+            <span>365 Days</span>
+          </span>
+
+          <span class="topbar-pill">
+            <span>AI Learning</span>
+          </span>
+
         </div>
 
-        <div class="brand-product">
-          AIVidhya
-        </div>
-
       </div>
 
-    </div>
+    </header>
 
 
-    <div class="course-meta">
+    <!-- ===================================================
+         MAIN APPLICATION
+         =================================================== -->
 
-      <span>
-        365 Days
-      </span>
+    <main>
 
-      <span>
-        AI Learning
-      </span>
+      <!-- =================================================
+           COURSE NAVIGATOR
+           ================================================= -->
 
-    </div>
+      <section
+        id="dayNavigator"
+        class="day-navigator"
+        aria-labelledby="courseTitle"
+      >
 
-  </header>
+        <div class="course-hero">
+
+          <div class="course-hero-copy">
+
+            <div class="eyebrow">
+              DAILY AI EDUCATION
+            </div>
+
+            <h1 id="courseTitle">
+              AI విద్యా ప్రయాణం
+            </h1>
+
+            <p class="course-description">
+              రోజుకు ఒక పాఠం · ఉదయం 6:00 గంటలకు అందుబాటులోకి వస్తుంది
+            </p>
+
+          </div>
 
 
-  <main>
+          <div class="today-panel">
 
-    <section
-      id="dayNavigator"
-      class="day-navigator"
-    >
+            <span class="today-panel-label">
+              TODAY
+            </span>
 
-      <div class="navigator-header">
+            <span
+              id="todayLabel"
+              class="today-panel-date"
+              aria-live="polite"
+            >
+              Loading...
+            </span>
 
-        <div>
+          </div>
 
-          <h1>
-            AI విద్యా ప్రయాణం
-          </h1>
+        </div>
 
-          <p>
-            రోజుకు ఒక పాఠం · ఉదయం 6:00 గంటలకు అందుబాటులోకి వస్తుంది
-          </p>
+
+        <!-- COURSE PROGRESS -->
+
+        <div class="course-progress">
+
+          <div class="progress-heading">
+
+            <span>
+              Your AI Learning Journey
+            </span>
+
+            <span id="progressText">
+              0 / 365 days
+            </span>
+
+          </div>
+
+          <div
+            class="progress-track"
+            aria-hidden="true"
+          >
+            <div
+              id="progressBar"
+              class="progress-bar"
+              style="width:0%"
+            ></div>
+          </div>
+
+        </div>
+
+
+        <!-- DAYS HEADING -->
+
+        <div class="days-heading">
+
+          <div>
+
+            <h2>
+              365 Days of AI Learning
+            </h2>
+
+            <p>
+              Choose a day to begin or continue learning.
+            </p>
+
+          </div>
+
+          <span class="days-count">
+            365 LESSONS
+          </span>
+
+        </div>
+
+
+        <!-- DAY GRID -->
+
+        <div
+          id="dayGrid"
+          class="day-grid"
+          aria-label="365 course days"
+        ></div>
+
+
+        <div class="navigator-note">
+
+          <span
+            class="navigator-note-dot"
+            aria-hidden="true"
+          ></span>
+
+          <span>
+            ప్రతి రోజు ఒక కొత్త AI పాఠం మీ అభ్యాస ప్రయాణాన్ని ముందుకు తీసుకెళ్తుంది.
+          </span>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           LESSON VIEW
+           ================================================= -->
+
+      <section
+        id="lessonView"
+        class="lesson-view"
+        hidden
+        aria-label="AI lesson"
+      >
+
+        <div class="lesson-topbar">
+
+          <button
+            id="backButton"
+            class="back-button"
+            type="button"
+          >
+            <span aria-hidden="true">←</span>
+            <span>వెనక్కి</span>
+          </button>
+
+          <span
+            id="lessonDayBadge"
+            class="lesson-day-badge"
+            hidden
+          >
+            AI LESSON
+          </span>
 
         </div>
 
 
         <div
-          id="todayLabel"
-          class="today-label"
-        >
-          Loading...
-        </div>
+          id="lessonContainer"
+          class="lesson-container"
+        ></div>
 
-      </div>
+      </section>
 
 
-      <div
-        id="dayGrid"
-        class="day-grid"
-        aria-label="365 course days"
-      ></div>
+      <!-- =================================================
+           STATUS VIEW
+           ================================================= -->
 
-    </section>
-
-
-    <section
-      id="lessonView"
-      class="lesson-view"
-      hidden
-    >
-
-      <button
-        id="backButton"
-        class="back-button"
-        type="button"
+      <section
+        id="statusView"
+        class="status-view"
+        hidden
+        aria-live="polite"
       >
-        ← వెనక్కి
-      </button>
 
-      <div
-        id="lessonContainer"
-      ></div>
+        <div class="status-card">
 
-    </section>
+          <div
+            class="status-icon"
+            aria-hidden="true"
+          >
+            !
+          </div>
 
+          <h2 id="statusTitle">
+            పాఠం అందుబాటులో లేదు
+          </h2>
 
-    <section
-      id="statusView"
-      class="status-view"
-      hidden
-    >
+          <p id="statusMessage"></p>
 
-      <div class="status-card">
+          <button
+            id="statusBackButton"
+            class="back-button"
+            type="button"
+          >
+            <span aria-hidden="true">←</span>
+            <span>వెనక్కి</span>
+          </button>
 
-        <div class="status-icon">
-          !
         </div>
 
-        <h2 id="statusTitle">
-          పాఠం అందుబాటులో లేదు
-        </h2>
+      </section>
 
-        <p id="statusMessage"></p>
+    </main>
 
-        <button
-          id="statusBackButton"
-          class="back-button"
-          type="button"
-        >
-          ← వెనక్కి
-        </button>
+
+    <!-- ===================================================
+         PREMIUM FOOTER
+         =================================================== -->
+
+    <footer class="site-footer">
+
+      <div class="footer-inner">
+
+        <div class="footer-brand">
+
+          <span class="footer-brand-mark">
+
+            <img
+              src="./icons/logo.png"
+              alt=""
+              width="36"
+              height="36"
+            >
+
+          </span>
+
+          <span class="footer-brand-copy">
+
+            <strong>
+              VIDHWAAN AIVidhya
+            </strong>
+
+            <span>
+              365-Day AI Learning Journey
+            </span>
+
+          </span>
+
+        </div>
+
+
+        <div class="footer-meta">
+
+          <span>
+            Learn AI. Build the future.
+          </span>
+
+          <span
+            class="footer-separator"
+            aria-hidden="true"
+          >
+            •
+          </span>
+
+          <span>
+            VIDHWAAN
+          </span>
+
+        </div>
 
       </div>
 
-    </section>
+    </footer>
 
-  </main>
-
-
-  <footer class="site-footer">
-
-    <strong>
-      VIDHWAAN AIVidhya
-    </strong>
-
-    <span>
-      365-Day AI Learning Journey
-    </span>
-
-  </footer>
+  </div>
 
 
-  <!-- PWA INSTALL BUTTON -->
+  <!-- =====================================================
+       PWA INSTALL BUTTON
+       ===================================================== -->
 
   <button
     id="pwaInstallButton"
@@ -366,38 +541,46 @@
     aria-label="Install VIDHWAAN AIVidhya"
     hidden
   >
-    <span class="pwa-install-icon" aria-hidden="true">↓</span>
-    <span class="pwa-install-text">
-      <strong>Install AIVidhya</strong>
-      <small>Use like an app</small>
+
+    <span
+      class="pwa-install-icon"
+      aria-hidden="true"
+    >
+      ↓
     </span>
+
+    <span class="pwa-install-text">
+
+      <strong>
+        Install AIVidhya
+      </strong>
+
+      <small>
+        Use like an app
+      </small>
+
+    </span>
+
   </button>
 
 
-  <script src="app.js" defer></script>
+  <!-- =====================================================
+       APPLICATION JAVASCRIPT
+       ===================================================== -->
+
+  <script src="./app.js" defer></script>
 
 
-  <!-- PWA SERVICE WORKER -->
+  <!-- =====================================================
+       SERVICE WORKER
+       ===================================================== -->
 
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("./sw.js", {
-            scope: "./"
-          })
-          .then(registration => {
-            console.log(
-              "VIDHWAAN AIVidhya service worker registered:",
-              registration.scope
-            );
-          })
-          .catch(error => {
-            console.error(
-              "Service worker registration failed:",
-              error
-            );
-          });
+        navigator.serviceWorker.register("./sw.js", {
+          scope: "./"
+        }).catch(() => {});
       });
     }
   </script>
