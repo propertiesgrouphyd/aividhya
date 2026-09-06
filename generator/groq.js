@@ -237,6 +237,38 @@ The previous generation did not satisfy the required JSON schema.
 
 You MUST obey these exact structural rules:
 
+- Return ONLY one JSON object.
+- Do not omit ANY required property.
+- Do not add ANY property that is not in the schema.
+
+IDENTITY:
+- day MUST be present.
+- courseDate MUST be present.
+- publishAt MUST be present.
+- The application will overwrite these three values after generation.
+
+LESSON:
+- title MUST be a non-empty string.
+- introduction MUST be a non-empty string.
+- sections MUST contain at least 4 sections.
+
+EVERY SECTION MUST contain:
+- heading
+- subheading
+- paragraphs
+- example
+
+PRACTICE:
+- practice MUST be an object.
+- practice MUST contain:
+  - title
+  - instruction
+
+KEY TAKEAWAYS:
+- keyTakeaways MUST be an array.
+- keyTakeaways MUST contain at least 3 strings.
+
+MCQs:
 - mcqs MUST contain exactly 5 questions.
 - EVERY MCQ MUST contain exactly 4 options.
 - NEVER provide 5 options.
@@ -247,14 +279,48 @@ You MUST obey these exact structural rules:
   option 2
   option 3
 - Every MCQ answer must be exactly 0, 1, 2, or 3.
-- sections MUST contain at least 4 sections.
-- Every section MUST contain a non-empty heading.
-- Every section MUST contain a non-empty subheading.
-- Every section MUST contain paragraphs.
-- Every section MUST contain an example.
-- practice MUST be an object containing title and instruction.
-- keyTakeaways MUST contain at least 3 items.
-- Return ONLY JSON.
+- Every MCQ must contain:
+  - question
+  - options
+  - answer
+  - explanation
+
+AI UPDATE:
+- aiUpdate MUST ALWAYS be present.
+- aiUpdate MUST be an object.
+- aiUpdate MUST contain:
+  - enabled
+  - title
+  - items
+- If no verified current AI/news information was supplied, use EXACTLY:
+
+"aiUpdate": {
+  "enabled": false,
+  "title": "AI Update",
+  "items": []
+}
+
+- NEVER omit aiUpdate.
+- NEVER invent news.
+- NEVER invent current events.
+- NEVER invent sources.
+- If no verified current information is available, keep enabled false and items empty.
+
+FINAL CHECK:
+Before returning the JSON, verify that these properties all exist:
+
+day
+courseDate
+publishAt
+title
+introduction
+sections
+practice
+keyTakeaways
+mcqs
+aiUpdate
+
+Return ONLY valid JSON.
 `;
 }
 
