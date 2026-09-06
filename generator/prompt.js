@@ -9,7 +9,6 @@ IMPORTANT:
 - Generate content ONLY for the supplied day.
 - Do NOT teach future days.
 - Do NOT teach unrelated topics.
-- Do NOT change the supplied day number.
 - Do NOT invent a different syllabus.
 - Do NOT mention these generation instructions.
 - Return ONLY valid JSON.
@@ -17,9 +16,17 @@ IMPORTANT:
 - Do not put any text before or after the JSON.
 - Every required field must contain meaningful content.
 - Never use empty strings for required fields.
+- The application controls the day number and publishing metadata.
+- Do NOT generate day.
+- Do NOT generate courseDate.
+- Do NOT generate publishAt.
+- Do NOT generate mcqs.
+- Do NOT generate aiUpdate.
 
 AUDIENCE:
+
 The course must be understandable to everyone:
+
 - children
 - school students
 - college students
@@ -30,12 +37,14 @@ The course must be understandable to everyone:
 - complete beginners
 
 LANGUAGE:
+
 - Generate the actual lesson in natural, simple, understandable Telugu.
 - Use English technical terms in parentheses where useful.
 - Do not translate technical terms unnaturally.
 - Prefer Telugu explanations with familiar English technical terms when appropriate.
 
 TEACHING STYLE:
+
 - Start from simple ideas.
 - Explain concepts progressively.
 - Move from simple understanding toward deeper understanding.
@@ -49,8 +58,13 @@ TEACHING STYLE:
 - Do not unnecessarily repeat earlier lessons.
 - Stay focused on today's syllabus.
 - Make the lesson useful for a learner studying independently.
+- Prefer accuracy and clarity over unnecessary complexity.
+- Explain important concepts completely enough for a beginner to understand them.
+- Use technically correct terminology.
+- Do not invent facts, statistics, companies, products, research findings, or historical events.
 
 CONTENT STRUCTURE:
+
 Create:
 
 1. A clear Telugu title.
@@ -62,10 +76,10 @@ Create:
    - 1–3 short paragraphs
    - one practical example
 5. A small practice activity.
-6. Key takeaways.
-7. Five practice MCQs.
+6. At least 3 key takeaways.
 
 SECTION RULES:
+
 - Every section must have a non-empty heading.
 - Every section must have a non-empty subheading.
 - Subheadings must add useful context; do not repeat the heading.
@@ -73,43 +87,31 @@ SECTION RULES:
 - Keep each paragraph short.
 - Avoid unnecessary repetition.
 - Examples should be realistic and understandable to beginners.
+- Examples must directly relate to the section topic.
+- Do not introduce unrelated concepts just to increase length.
+- Organize sections in a logical learning sequence.
+- The lesson should progress from basic understanding to practical understanding.
 
 PRACTICE RULES:
+
 - Give one very small activity the learner can complete immediately.
 - The activity should relate directly to today's lesson.
+- The activity should reinforce the main concept.
 - Do not require special software, paid tools, or user documents unless today's syllabus specifically requires them.
+- Keep the activity practical and beginner-friendly.
 
-MCQ RULES:
-- Create exactly 5 MCQs.
-- Every question must have exactly 4 options.
-- Exactly one option must be correct.
-- The answer field must contain the zero-based option index:
-  0, 1, 2, or 3.
-- Every MCQ must have a short Telugu explanation.
-- Questions must test understanding, not just memorization.
-- Use a mixture of conceptual and practical questions.
-- Do not make all correct answers the same option.
-- Distribute correct answers naturally across 0, 1, 2, and 3.
-- Do not reveal the answer inside the question.
-- Do not use ambiguous questions.
-- Do not create two options that could both reasonably be correct.
+KEY TAKEAWAY RULES:
 
-AI UPDATE:
-Include a separate "AI Update" section only when reliable current information is supplied to the generation system.
+- Provide at least 3 important takeaways.
+- Each takeaway must contain a useful learning point.
+- Avoid repeating the same statement in different words.
+- Keep takeaways concise and easy to remember.
 
-If no verified current information is supplied:
-- aiUpdate.enabled must be false.
-- aiUpdate.items must be an empty array.
-- Do not invent current events.
-- Do not guess dates.
-- Do not pretend to have verified a news event.
+OUTPUT JSON:
 
-OUTPUT JSON SCHEMA:
+Return exactly ONE JSON object with ONLY these properties:
 
 {
-  "day": number,
-  "courseDate": "YYYY-MM-DD",
-  "publishAt": "YYYY-MM-DDTHH:MM:SS+05:30",
   "title": "Telugu title",
   "introduction": "Short Telugu introduction",
   "sections": [
@@ -134,63 +136,86 @@ OUTPUT JSON SCHEMA:
     "Telugu takeaway 1",
     "Telugu takeaway 2",
     "Telugu takeaway 3"
-  ],
-  "mcqs": [
-    {
-      "question": "Telugu question",
-      "options": [
-        "Telugu option A",
-        "Telugu option B",
-        "Telugu option C",
-        "Telugu option D"
-      ],
-      "answer": 0,
-      "explanation": "Short Telugu explanation"
-    }
-  ],
-  "aiUpdate": {
-    "enabled": false,
-    "title": "AI Update",
-    "items": []
-  }
+  ]
 }
 
-STRICT VALIDATION REQUIREMENTS:
-- day must exactly equal the supplied day.
-- courseDate is controlled by the application.
-- publishAt is controlled by the application.
-- The application will overwrite day, courseDate, and publishAt after generation.
-- Never calculate or invent a different course date.
-- title must be non-empty.
-- introduction must be non-empty.
+STRICT OUTPUT REQUIREMENTS:
+
+- Return exactly ONE JSON object.
+- Do not return an array.
+- Do not return Markdown.
+- Do not return comments.
+- Do not return explanatory text outside the JSON object.
+- Do not add properties that are not defined above.
+
+TITLE:
+
+- title must be a non-empty string.
+- The title must clearly represent today's supplied syllabus.
+
+INTRODUCTION:
+
+- introduction must be a non-empty string.
+- Keep it short but meaningful.
+- It should explain why today's topic matters.
+
+SECTIONS:
+
 - sections must contain at least 4 sections.
-- every section must contain a non-empty heading.
-- every section must contain a non-empty subheading.
-- every section must contain a paragraphs array with at least 1 paragraph.
-- every section must contain an example object.
-- example title must be non-empty.
-- example content must be non-empty.
-- practice must contain a non-empty title.
-- practice must contain a non-empty instruction.
+- Every section must contain:
+  - heading
+  - subheading
+  - paragraphs
+  - example
+- Every heading must be non-empty.
+- Every subheading must be non-empty.
+- paragraphs must contain at least 1 paragraph.
+- Keep paragraphs concise.
+- Every example must contain:
+  - title
+  - content
+- Example content must be non-empty.
+
+PRACTICE:
+
+- practice must contain:
+  - title
+  - instruction
+- Both must be non-empty.
+
+KEY TAKEAWAYS:
+
 - keyTakeaways must contain at least 3 items.
-- mcqs must contain exactly 5 questions.
-- every MCQ must contain exactly 4 options.
-- every MCQ option must be non-empty.
-- every MCQ must have exactly one correct answer.
-- every MCQ answer must be 0, 1, 2, or 3.
-- every MCQ must contain a non-empty explanation.
-- aiUpdate must not contain invented news.
-- Never return empty strings for required fields.
-- Return valid JSON only.
+- Every item must be a non-empty string.
+
+DO NOT GENERATE:
+
+- mcqs
+- aiUpdate
+- day
+- courseDate
+- publishAt
+
+The application will generate MCQs separately and will add the system-controlled fields after generation.
 
 TODAY'S MASTER SYLLABUS:
 
 ${JSON.stringify(daySyllabus, null, 2)}
 
 FINAL INSTRUCTION:
-Generate ONLY this course day.
+
+Generate ONLY the lesson for this supplied syllabus.
+
 Follow the supplied master syllabus exactly.
+
 Do not generate any other day.
+
+Do not generate MCQs.
+
+Do not generate aiUpdate.
+
+Do not generate day, courseDate, or publishAt.
+
 Return ONLY valid JSON.
 `;
 }
