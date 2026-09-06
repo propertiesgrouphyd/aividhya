@@ -1,4 +1,4 @@
-const CACHE_NAME = "vidhwaan-aividhya-v13";
+const CACHE_NAME = "vidhwaan-aividhya-v14";
 
 const APP_SHELL = [
   "./",
