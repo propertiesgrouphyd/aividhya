@@ -8,6 +8,107 @@ const MAX_ATTEMPTS = 3;
 
 
 /* ============================================================
+   CONTENT SCRIPT VALIDATION
+============================================================ */
+
+const ALLOWED_SCRIPT_TELUGU = /\p{Script=Telugu}/u;
+const ALLOWED_SCRIPT_LATIN = /\p{Script=Latin}/u;
+const ALLOWED_SCRIPT_COMMON = /\p{Script=Common}/u;
+const ALLOWED_SCRIPT_INHERITED = /\p{Script=Inherited}/u;
+
+function findUnsupportedScript(
+  value,
+  path = "content"
+) {
+  if (typeof value === "string") {
+    for (const character of value) {
+      if (
+        !ALLOWED_SCRIPT_TELUGU.test(character) &&
+        !ALLOWED_SCRIPT_LATIN.test(character) &&
+        !ALLOWED_SCRIPT_COMMON.test(character) &&
+        !ALLOWED_SCRIPT_INHERITED.test(character)
+      ) {
+        return {
+          path,
+          character,
+          codePoint:
+            `U+${character.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`
+        };
+      }
+    }
+
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    for (
+      let index = 0;
+      index < value.length;
+      index++
+    ) {
+      const issue =
+        findUnsupportedScript(
+          value[index],
+          `${path}[${index}]`
+        );
+
+      if (issue) {
+        return issue;
+      }
+    }
+
+    return null;
+  }
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    for (
+      const [key, child]
+      of Object.entries(value)
+    ) {
+      const issue =
+        findUnsupportedScript(
+          child,
+          `${path}.${key}`
+        );
+
+      if (issue) {
+        return issue;
+      }
+    }
+  }
+
+  return null;
+}
+
+function validateContentLanguage(
+  content,
+  contentType
+) {
+  const issue =
+    findUnsupportedScript(
+      content,
+      contentType
+    );
+
+  if (!issue) {
+    return;
+  }
+
+  const error =
+    new Error(
+      `Groq returned unsupported writing-system content at ${issue.path}: ${issue.character} (${issue.codePoint})`
+    );
+
+  error.isLanguageValidation = true;
+
+  throw error;
+}
+
+
+/* ============================================================
    LESSON SCHEMA
 ============================================================ */
 
@@ -155,7 +256,12 @@ const MCQ_SCHEMA = {
 
           answer: {
             type: "integer",
-            enum: [0, 1, 2, 3]
+            enum: [
+              0,
+              1,
+              2,
+              3
+            ]
           },
 
           explanation: {
@@ -195,7 +301,9 @@ function buildLessonAttemptPrompt(
 
 FINAL CORRECTION FOR THIS RETRY:
 
-The previous lesson generation did not satisfy the required JSON schema.
+Use natural, standard Telugu for the lesson. English/Latin technical terms are allowed where appropriate. Do not use any other writing system.
+
+The previous lesson generation did not pass automated validation.
 
 Return exactly ONE JSON object.
 
@@ -257,7 +365,9 @@ function buildMCQAttemptPrompt(
 
 FINAL CORRECTION FOR THIS RETRY:
 
-The previous MCQ generation did not satisfy the required JSON schema.
+Use natural, standard Telugu for all MCQ text. English/Latin technical terms are allowed where appropriate. Do not use any other writing system.
+
+The previous MCQ generation did not pass automated validation.
 
 Return exactly ONE JSON object.
 
@@ -491,13 +601,21 @@ export async function generateLessonWithGroq(
           attemptPrompt,
           LESSON_SCHEMA,
           "vidhwaan_aividhya_lesson",
-          "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate only the lesson content requested by the user. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
+          "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate natural, standard Telugu. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
         );
 
       const content =
         parseGroqResponse(
           result
         );
+
+      const parsedContent =
+        JSON.parse(content);
+
+      validateContentLanguage(
+        parsedContent,
+        "lesson"
+      );
 
       console.log(
         "✅ Groq lesson generation succeeded."
@@ -509,11 +627,14 @@ export async function generateLessonWithGroq(
       lastError = error;
 
       if (
-        error?.isSchemaValidation &&
+        (
+          error?.isSchemaValidation ||
+          error?.isLanguageValidation
+        ) &&
         attempt < MAX_ATTEMPTS
       ) {
         console.log(
-          "⚠️ Lesson structured JSON validation failed. Retrying..."
+          "⚠️ Lesson validation failed. Retrying..."
         );
 
         continue;
@@ -561,13 +682,21 @@ export async function generateMCQsWithGroq(
           attemptPrompt,
           MCQ_SCHEMA,
           "vidhwaan_aividhya_mcqs",
-          "You are VIDHWAAN AIVidhya's professional Telugu examination-question generator. Generate exactly five high-quality MCQs based only on the supplied lesson. Follow the JSON schema exactly. Every MCQ must have exactly four options and exactly one correct answer. Never add extra fields."
+          "You are VIDHWAAN AIVidhya's professional Telugu examination-question generator. Generate exactly five high-quality MCQs in natural, standard Telugu based only on the supplied lesson. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Every MCQ must have exactly four options and exactly one correct answer. Never add extra fields."
         );
 
       const content =
         parseGroqResponse(
           result
         );
+
+      const parsedContent =
+        JSON.parse(content);
+
+      validateContentLanguage(
+        parsedContent,
+        "mcqs"
+      );
 
       console.log(
         "✅ Groq MCQ generation succeeded."
@@ -579,11 +708,14 @@ export async function generateMCQsWithGroq(
       lastError = error;
 
       if (
-        error?.isSchemaValidation &&
+        (
+          error?.isSchemaValidation ||
+          error?.isLanguageValidation
+        ) &&
         attempt < MAX_ATTEMPTS
       ) {
         console.log(
-          "⚠️ MCQ structured JSON validation failed. Retrying..."
+          "⚠️ MCQ validation failed. Retrying..."
         );
 
         continue;
