@@ -355,9 +355,9 @@
 
     try {
       const response = await fetch(
-        `${COURSE.dataPath}day-${String(dayNumber).padStart(3, "0")}.json`,
+        `${COURSE.dataPath}day-${String(dayNumber).padStart(3, "0")}.dat`,
         {
-          cache: "no-store"
+          cache: "default"
         }
       );
 
@@ -367,7 +367,13 @@
         );
       }
 
-      const lesson = await response.json();
+      const encryptedData = new Uint8Array(
+        await response.arrayBuffer()
+      );
+
+      const lesson = await decryptLessonData(
+        encryptedData
+      );
 
       validateLessonIdentity(
         lesson,
@@ -394,6 +400,149 @@
       );
     }
   }
+
+
+
+  /* =========================================================
+     PROTECTED LESSON DATA
+     ========================================================= */
+
+  const AIVIDHYA_DATA_KEY =
+    "__AIVIDHYA_DATA_KEY__";
+
+  function base64ToBytes(base64) {
+    const binary = atob(base64);
+
+    const bytes = new Uint8Array(
+      binary.length
+    );
+
+    for (let index = 0; index < binary.length; index++) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return bytes;
+  }
+
+  async function decryptLessonData(encryptedData) {
+    if (
+      typeof AIVIDHYA_DATA_KEY !== "string" ||
+      !AIVIDHYA_DATA_KEY
+    ) {
+      throw new Error(
+        "Lesson decryption key is not configured."
+      );
+    }
+
+    const data = encryptedData;
+
+    /*
+     * File format created by protect-data.js:
+     *
+     * [12-byte IV]
+     * [16-byte AES-GCM authentication tag]
+     * [encrypted gzip payload]
+     */
+
+    if (data.length <= 28) {
+      throw new Error(
+        "Protected lesson file is invalid."
+      );
+    }
+
+    const iv = data.slice(0, 12);
+
+    const authTag = data.slice(12, 28);
+
+    const ciphertext = data.slice(28);
+
+    /*
+     * Web Crypto AES-GCM expects:
+     *
+     * ciphertext + authentication tag
+     */
+
+    const encryptedPayload =
+      new Uint8Array(
+        ciphertext.length + authTag.length
+      );
+
+    encryptedPayload.set(
+      ciphertext,
+      0
+    );
+
+    encryptedPayload.set(
+      authTag,
+      ciphertext.length
+    );
+
+    const rawKey =
+      base64ToBytes(AIVIDHYA_DATA_KEY);
+
+    if (rawKey.length !== 32) {
+      throw new Error(
+        "Invalid AIVidhya data key."
+      );
+    }
+
+    const cryptoKey =
+      await crypto.subtle.importKey(
+        "raw",
+        rawKey,
+        {
+          name: "AES-GCM"
+        },
+        false,
+        ["decrypt"]
+      );
+
+    const decrypted =
+      await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv
+        },
+        cryptoKey,
+        encryptedPayload
+      );
+
+    /*
+     * protect-data.js gzip-compresses the JSON
+     * before encryption.
+     */
+
+    const compressedData =
+      new Uint8Array(decrypted);
+
+    let jsonText;
+
+    if ("DecompressionStream" in window) {
+      const stream =
+        new Blob([compressedData])
+          .stream()
+          .pipeThrough(
+            new DecompressionStream("gzip")
+          );
+
+      const decompressed =
+        await new Response(stream)
+          .arrayBuffer();
+
+      jsonText =
+        new TextDecoder().decode(
+          decompressed
+        );
+    } else {
+      throw new Error(
+        "This browser does not support gzip decompression."
+      );
+    }
+
+    return JSON.parse(jsonText);
+  }
+
+
 
   function validateLessonIdentity(
     lesson,
