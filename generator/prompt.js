@@ -38,10 +38,12 @@ The course must be understandable to everyone:
 
 LANGUAGE:
 
-- Generate the actual lesson in natural, simple, understandable Telugu.
-- Use English technical terms in parentheses where useful.
+- Generate the actual lesson in natural, standard, simple Telugu.
+- Use Telugu script for Telugu words.
+- Use English/Latin script only for appropriate technical terms, established product or model names, or necessary proper names.
+- Do not mix other languages or writing systems into Telugu sentences.
 - Do not translate technical terms unnaturally.
-- Prefer Telugu explanations with familiar English technical terms when appropriate.
+- Prefer clear Telugu explanations with familiar English technical terms when appropriate.
 
 TEACHING STYLE:
 
@@ -215,6 +217,8 @@ Do not generate MCQs.
 Do not generate aiUpdate.
 
 Do not generate day, courseDate, or publishAt.
+
+Use only Telugu plus appropriate English/Latin technical terms and necessary proper names. Do not use other writing systems.
 
 Return ONLY valid JSON.
 `;
