@@ -64,6 +64,7 @@ jobs:
         run: |
           node --check app.js
           node --check sw.js
+          node --check scripts/protect-data.js
           npm run validate
 
           node --input-type=module <<'NODE'
@@ -78,7 +79,8 @@ jobs:
             "favicon.ico",
             "icons/logo.png",
             "icons/icon-192.png",
-            "icons/icon-512.png"
+            "icons/icon-512.png",
+            "scripts/protect-data.js"
           ];
 
           for (const file of required) {
@@ -87,7 +89,21 @@ jobs:
             }
           }
 
-          console.log("AIVidhya source validation: PASSED");
+          if (!fs.existsSync("data")) {
+            throw new Error("Missing data directory");
+          }
+
+          const lessonFiles = fs
+            .readdirSync("data")
+            .filter(file => /^day-\d{3}\.json$/.test(file));
+
+          if (lessonFiles.length === 0) {
+            throw new Error("No lesson JSON files found in data/");
+          }
+
+          console.log(
+            `AIVidhya source validation: PASSED (${lessonFiles.length} lesson files)`
+          );
           NODE
 
 
@@ -97,7 +113,6 @@ jobs:
 
       - name: Prepare Dist
         run: |
-
           rm -rf dist
 
           mkdir -p dist
@@ -113,7 +128,91 @@ jobs:
 
           mkdir -p dist/data
 
-          cp data/day-*.json dist/data/
+
+      # ==========================================
+      # PROTECT LESSON DATA
+      # ==========================================
+
+      - name: Protect Lesson Data
+        env:
+          AIVIDHYA_DATA_KEY: ${{ secrets.AIVIDHYA_DATA_KEY }}
+
+        run: |
+          if [ -z "$AIVIDHYA_DATA_KEY" ]; then
+            echo "ERROR: AIVIDHYA_DATA_KEY GitHub Secret is missing."
+            exit 1
+          fi
+
+          node scripts/protect-data.js
+
+
+      # ==========================================
+      # INJECT LESSON DECRYPTION KEY
+      # ==========================================
+
+      - name: Inject Lesson Decryption Key
+        env:
+          AIVIDHYA_DATA_KEY: ${{ secrets.AIVIDHYA_DATA_KEY }}
+
+        run: |
+          if [ -z "$AIVIDHYA_DATA_KEY" ]; then
+            echo "ERROR: AIVIDHYA_DATA_KEY GitHub Secret is missing."
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const file = "dist/app.js";
+          const key = process.env.AIVIDHYA_DATA_KEY;
+          const placeholder = "__AIVIDHYA_DATA_KEY__";
+
+          const source = fs.readFileSync(file, "utf8");
+
+          const occurrences =
+            source.split(placeholder).length - 1;
+
+          if (occurrences !== 1) {
+            throw new Error(
+              `Expected exactly one decryption-key placeholder in dist/app.js; found ${occurrences}.`
+            );
+          }
+
+          if (!/^[A-Za-z0-9+/]+={0,2}$/.test(key)) {
+            throw new Error(
+              "AIVIDHYA_DATA_KEY is not valid Base64."
+            );
+          }
+
+          const keyBytes = Buffer.from(key, "base64");
+
+          if (keyBytes.length !== 32) {
+            throw new Error(
+              "AIVIDHYA_DATA_KEY must decode to exactly 32 bytes (256 bits)."
+            );
+          }
+
+          const replacement = JSON.stringify(key);
+
+          const updated = source.replace(
+            `"${placeholder}"`,
+            replacement
+          );
+
+          fs.writeFileSync(file, updated, "utf8");
+
+          if (updated.includes(placeholder)) {
+            throw new Error(
+              "Decryption-key placeholder was not fully replaced."
+            );
+          }
+
+          console.log(
+            "Lesson decryption key injected successfully."
+          );
+          NODE
+
+          node --check dist/app.js
 
 
       # ==========================================
@@ -122,7 +221,6 @@ jobs:
 
       - name: Minify HTML
         run: |
-
           html-minifier-terser \
             --collapse-whitespace \
             --remove-comments \
@@ -140,7 +238,6 @@ jobs:
 
       - name: Minify CSS
         run: |
-
           cleancss \
             -O2 \
             dist/main.css \
@@ -153,7 +250,6 @@ jobs:
 
       - name: Minify JavaScript
         run: |
-
           terser dist/app.js \
             --compress \
             --mangle \
@@ -166,7 +262,6 @@ jobs:
 
       - name: Obfuscate JavaScript
         run: |
-
           javascript-obfuscator dist/app.js \
             --output dist/app.js \
             --compact true \
@@ -184,12 +279,25 @@ jobs:
 
 
       # ==========================================
+      # VERIFY DECRYPTION KEY INJECTION
+      # ==========================================
+
+      - name: Verify Decryption Key Injection
+        run: |
+          if grep -Fq '__AIVIDHYA_DATA_KEY__' dist/app.js; then
+            echo "ERROR: Decryption-key placeholder still exists in production app.js."
+            exit 1
+          fi
+
+          echo "Decryption key injection: PASSED"
+
+
+      # ==========================================
       # CACHE VERSION
       # ==========================================
 
       - name: Generate Asset Version
         run: |
-
           VERSION=$(date +%s)
 
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
@@ -203,7 +311,6 @@ jobs:
 
       - name: Apply Asset Cache Busting
         run: |
-
           sed -i \
             "s|href=\"./main.css\"|href=\"./main.css?v=$VERSION\"|g" \
             dist/index.html
@@ -223,7 +330,6 @@ jobs:
 
       - name: Create Cloudflare Headers
         run: |
-
           cat > dist/_headers <<'EOF'
 
           /*
@@ -242,7 +348,7 @@ jobs:
             Cache-Control: no-cache, max-age=0, must-revalidate
 
           /data/*
-            Cache-Control: no-store, max-age=0, must-revalidate
+            Cache-Control: public, max-age=31536000, immutable
 
           /app.js
             Cache-Control: public, max-age=31536000, immutable
@@ -259,12 +365,11 @@ jobs:
 
 
       # ==========================================
-      # VERIFY DIST
+      # VERIFY PRODUCTION BUILD
       # ==========================================
 
       - name: Verify Production Build
         run: |
-
           echo "=============================================="
           echo "AIVIDHYA PRODUCTION BUILD"
           echo "=============================================="
@@ -273,10 +378,35 @@ jobs:
 
           echo
           echo "=============================================="
-          echo "LESSON FILES"
+          echo "PROTECTED LESSON FILES"
           echo "=============================================="
 
-          ls -lh dist/data/day-*.json
+          ls -lh dist/data/day-*.dat
+
+          DAT_COUNT=$(find dist/data -maxdepth 1 -type f -name 'day-*.dat' | wc -l)
+          JSON_COUNT=$(find dist/data -maxdepth 1 -type f -name 'day-*.json' | wc -l)
+          SOURCE_COUNT=$(find data -maxdepth 1 -type f -name 'day-*.json' | wc -l)
+
+          echo "Source JSON files  : $SOURCE_COUNT"
+          echo "Protected DAT files: $DAT_COUNT"
+          echo "JSON in dist/data  : $JSON_COUNT"
+
+          if [ "$DAT_COUNT" -ne "$SOURCE_COUNT" ]; then
+            echo "ERROR: Protected lesson count does not match source lesson count."
+            exit 1
+          fi
+
+          if [ "$JSON_COUNT" -ne 0 ]; then
+            echo "ERROR: Plain JSON files found inside dist/data."
+            exit 1
+          fi
+
+          if grep -Fq '__AIVIDHYA_DATA_KEY__' dist/app.js; then
+            echo "ERROR: Plain decryption-key placeholder found in production app.js."
+            exit 1
+          fi
+
+          echo "Lesson protection: PASSED"
 
           echo
           echo "=============================================="
@@ -284,6 +414,7 @@ jobs:
           echo "=============================================="
 
           du -sh dist
+
           du -h \
             dist/index.html \
             dist/main.css \
@@ -305,6 +436,9 @@ jobs:
           test -f dist/icons/icon-192.png
           test -f dist/icons/icon-512.png
 
+          test "$JSON_COUNT" -eq 0
+          test "$DAT_COUNT" -eq "$SOURCE_COUNT"
+
           echo "Production build: PASSED"
 
 
@@ -318,19 +452,15 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
         run: |
-
           if ! wrangler pages project list | grep -q "$PROJECT_NAME"
           then
-
             echo "Creating Cloudflare Pages project..."
 
             wrangler pages project create "$PROJECT_NAME" \
               --production-branch main
 
           else
-
             echo "Cloudflare Pages project already exists."
-
           fi
 
 
@@ -344,7 +474,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
         run: |
-
           wrangler pages deploy dist \
             --project-name="$PROJECT_NAME"
 
@@ -355,7 +484,6 @@ jobs:
 
       - name: Deployment Success
         run: |
-
           echo "=============================================="
           echo " VIDHWAAN AIVidhya DEPLOYMENT SUCCESS"
           echo "=============================================="
@@ -369,8 +497,12 @@ jobs:
           echo "✓ CSS minified"
           echo "✓ JavaScript minified"
           echo "✓ JavaScript obfuscated"
+          echo "✓ Lesson JSON compressed"
+          echo "✓ Lesson JSON AES-256-GCM protected"
+          echo "✓ Plain JSON excluded from dist"
+          echo "✓ Only .dat lesson files deployed"
+          echo "✓ Lesson CDN caching enabled"
           echo "✓ Cache busting enabled"
           echo "✓ Production headers created"
-          echo "✓ Lesson data deployed"
           echo "✓ PWA service worker preserved"
           echo "✓ Cloudflare Pages deployment complete"
