@@ -1,16 +1,52 @@
-const CACHE_NAME = "vidhwaan-aividhya-v16";
+const CACHE_NAME = "vidhwaan-aividhya-images-v17";
 
-const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./main.css",
-  "./app.js",
-  "./manifest.json",
-  "./favicon.ico",
-  "./icons/logo.png",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
-];
+/*
+ * ==========================================
+ * SERVICE WORKER
+ * ==========================================
+ *
+ * IMPORTANT:
+ *
+ * The PWA does NOT cache application files.
+ *
+ * NOT CACHED:
+ *   - index.html
+ *   - app.js
+ *   - main.css
+ *   - manifest.json
+ *   - favicon
+ *   - lesson .dat files
+ *   - JSON
+ *   - JavaScript
+ *   - CSS
+ *   - fonts
+ *   - API responses
+ *   - any other application/resource files
+ *
+ * ONLY IMAGES ARE CACHED.
+ */
+
+
+/*
+ * ==========================================
+ * IMAGE CHECK
+ * ==========================================
+ *
+ * Only these image extensions are allowed
+ * into the service-worker cache.
+ */
+
+function isImageRequest(request) {
+  if (request.method !== "GET") {
+    return false;
+  }
+
+  const url = new URL(request.url);
+
+  return /\.(png|jpe?g|webp|gif|svg|ico|avif)$/i.test(
+    url.pathname
+  );
+}
 
 
 /*
@@ -18,38 +54,14 @@ const APP_SHELL = [
  * INSTALL
  * ==========================================
  *
- * Cache only the static application shell.
+ * Do not pre-cache application files.
  *
- * IMPORTANT:
- * cache: "reload" forces the browser to obtain
- * the latest deployed version instead of using
- * an older HTTP/browser cache entry.
- *
- * Lesson .dat files are intentionally NOT
- * cached by the service worker.
+ * The service worker activates immediately.
  */
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(async cache => {
-        for (const url of APP_SHELL) {
-          const request = new Request(url, {
-            cache: "reload"
-          });
-
-          const response = await fetch(request);
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to cache app shell: ${url} (${response.status})`
-            );
-          }
-
-          await cache.put(request, response);
-        }
-      })
-      .then(() => self.skipWaiting())
+    self.skipWaiting()
   );
 });
 
@@ -59,23 +71,24 @@ self.addEventListener("install", event => {
  * ACTIVATE
  * ==========================================
  *
- * Remove every older service-worker cache.
+ * Remove ALL previous service-worker caches.
  *
- * clients.claim() makes the new service worker
- * control already-open application pages
- * immediately.
+ * This is important because older versions of
+ * the PWA may have cached app.js, main.css,
+ * index.html, .dat files, etc.
+ *
+ * After this activation, only image caching
+ * is allowed.
  */
 
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys =>
-        Promise.all(
-          keys
-            .filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
-        )
-      )
+      .then(keys => {
+        return Promise.all(
+          keys.map(key => caches.delete(key))
+        );
+      })
       .then(() => self.clients.claim())
   );
 });
@@ -86,51 +99,81 @@ self.addEventListener("activate", event => {
  * FETCH
  * ==========================================
  *
- * Lesson .dat files:
- *   NEVER cache in the PWA.
- *   Always request from the network.
- *
- * HTML navigation:
- *   Network first.
- *   Cached index.html as offline fallback.
- *
- * Static application resources:
+ * ONLY IMAGES:
  *   Cache first.
+ *
+ * EVERYTHING ELSE:
+ *   Network only.
+ *
+ * This guarantees that application files
+ * always come from the current deployment.
  */
 
 self.addEventListener("fetch", event => {
   const request = event.request;
 
+  /*
+   * Only handle GET requests.
+   */
   if (request.method !== "GET") {
     return;
   }
 
-  const url = new URL(request.url);
-
 
   /*
    * ========================================
-   * LESSON DATA
+   * IMAGES
    * ========================================
    *
-   * Protected lesson files are encrypted
-   * and compressed .dat files.
-   *
-   * They are intentionally excluded from
-   * the service-worker cache.
-   *
-   * Cloudflare CDN caching is independent
-   * of this service-worker behavior.
+   * Images are the ONLY files cached by the
+   * service worker.
    */
 
-  if (
-    url.pathname.includes("/data/") &&
-    url.pathname.endsWith(".dat")
-  ) {
+  if (isImageRequest(request)) {
     event.respondWith(
-      fetch(request, {
-        cache: "no-store"
-      })
+      caches.match(request)
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          return fetch(request, {
+            cache: "no-store"
+          })
+            .then(response => {
+              /*
+               * Cache only successful normal
+               * responses.
+               */
+
+              if (
+                !response ||
+                response.status !== 200 ||
+                response.type === "opaque"
+              ) {
+                return response;
+              }
+
+              const responseToCache =
+                response.clone();
+
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(
+                    request,
+                    responseToCache
+                  );
+                })
+                .catch(() => {
+                  /*
+                   * Image caching failure must
+                   * never break the image request.
+                   */
+                });
+
+              return response;
+            });
+        })
     );
 
     return;
@@ -139,71 +182,31 @@ self.addEventListener("fetch", event => {
 
   /*
    * ========================================
-   * HTML NAVIGATION
+   * EVERYTHING ELSE
    * ========================================
    *
-   * Network first so updated index.html
-   * can be received immediately.
+   * NEVER CACHE.
    *
-   * If the network is unavailable, use
-   * the cached application shell.
-   */
-
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request, {
-        cache: "no-store"
-      })
-        .then(response => {
-          return response;
-        })
-        .catch(() => {
-          return caches.match("./index.html");
-        })
-    );
-
-    return;
-  }
-
-
-  /*
-   * ========================================
-   * STATIC APPLICATION RESOURCES
-   * ========================================
+   * This includes:
    *
-   * Cache first for fast application
-   * startup and offline functionality.
+   *   index.html
+   *   app.js
+   *   main.css
+   *   manifest.json
+   *   favicon
+   *   .dat lesson files
+   *   JSON
+   *   fonts
+   *   APIs
+   *   any other resource
+   *
+   * The browser is instructed to obtain the
+   * current resource from the network.
    */
 
   event.respondWith(
-    caches.match(request)
-      .then(cached => {
-
-        if (cached) {
-          return cached;
-        }
-
-        return fetch(request)
-          .then(response => {
-
-            if (
-              !response ||
-              response.status !== 200 ||
-              response.type === "opaque"
-            ) {
-              return response;
-            }
-
-            const copy = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(request, copy);
-              });
-
-            return response;
-          });
-
-      })
+    fetch(request, {
+      cache: "no-store"
+    })
   );
 });
