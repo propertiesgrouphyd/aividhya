@@ -1,4 +1,4 @@
-const CACHE_NAME = "vidhwaan-aividhya-v15";
+const CACHE_NAME = "vidhwaan-aividhya-v16";
 
 const APP_SHELL = [
   "./",
@@ -20,6 +20,11 @@ const APP_SHELL = [
  *
  * Cache only the static application shell.
  *
+ * IMPORTANT:
+ * cache: "reload" forces the browser to obtain
+ * the latest deployed version instead of using
+ * an older HTTP/browser cache entry.
+ *
  * Lesson .dat files are intentionally NOT
  * cached by the service worker.
  */
@@ -27,7 +32,23 @@ const APP_SHELL = [
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
+      .then(async cache => {
+        for (const url of APP_SHELL) {
+          const request = new Request(url, {
+            cache: "reload"
+          });
+
+          const response = await fetch(request);
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to cache app shell: ${url} (${response.status})`
+            );
+          }
+
+          await cache.put(request, response);
+        }
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -38,7 +59,11 @@ self.addEventListener("install", event => {
  * ACTIVATE
  * ==========================================
  *
- * Remove all older service-worker caches.
+ * Remove every older service-worker cache.
+ *
+ * clients.claim() makes the new service worker
+ * control already-open application pages
+ * immediately.
  */
 
 self.addEventListener("activate", event => {

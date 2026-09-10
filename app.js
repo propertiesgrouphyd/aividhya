@@ -1132,10 +1132,68 @@
   }
 
   /* =========================================================
+     PWA UPDATE
+     ========================================================= */
+
+  async function checkForPWAUpdate() {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    try {
+      const registration =
+        await navigator.serviceWorker.getRegistration();
+
+      if (!registration) {
+        return;
+      }
+
+      /*
+       * Force an immediate check for a newly deployed
+       * service worker whenever the PWA starts.
+       */
+      await registration.update();
+
+      /*
+       * If a new service worker takes control of this
+       * already-open PWA, reload once so the latest
+       * app.js / application shell is actually used.
+       */
+      let reloading = false;
+
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => {
+          if (reloading) {
+            return;
+          }
+
+          reloading = true;
+          window.location.reload();
+        },
+        { once: true }
+      );
+
+    } catch (error) {
+      /*
+       * PWA update failure must never prevent the app
+       * itself from opening.
+       */
+      console.warn(
+        "VIDHWAAN AIVidhya: PWA update check failed.",
+        error
+      );
+    }
+  }
+
+
+  /* =========================================================
      STARTUP
      ========================================================= */
 
   function init() {
+    checkForPWAUpdate();
+
     if (
       !el.dayGrid ||
       !el.lessonView ||
