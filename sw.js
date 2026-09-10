@@ -1,4 +1,4 @@
-const CACHE_NAME = "vidhwaan-aividhya-v14";
+const CACHE_NAME = "vidhwaan-aividhya-v15";
 
 const APP_SHELL = [
   "./",
@@ -7,18 +7,23 @@ const APP_SHELL = [
   "./app.js",
   "./manifest.json",
   "./favicon.ico",
-  "./icon/logo.png",
-  "./icon/icon-192.png",
-  "./icon/icon-512.png"
+  "./icons/logo.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 
 /*
+ * ==========================================
  * INSTALL
+ * ==========================================
  *
  * Cache only the static application shell.
- * Daily lesson JSON files are intentionally NOT cached.
+ *
+ * Lesson .dat files are intentionally NOT
+ * cached by the service worker.
  */
+
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -29,10 +34,13 @@ self.addEventListener("install", event => {
 
 
 /*
+ * ==========================================
  * ACTIVATE
+ * ==========================================
  *
- * Remove caches belonging to older versions.
+ * Remove all older service-worker caches.
  */
+
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
@@ -49,14 +57,22 @@ self.addEventListener("activate", event => {
 
 
 /*
+ * ==========================================
  * FETCH
+ * ==========================================
  *
- * Lesson JSON:
- * ALWAYS use the network.
+ * Lesson .dat files:
+ *   NEVER cache in the PWA.
+ *   Always request from the network.
  *
- * This is critical because GitHub Actions generates
- * a new lesson every midnight.
+ * HTML navigation:
+ *   Network first.
+ *   Cached index.html as offline fallback.
+ *
+ * Static application resources:
+ *   Cache first.
  */
+
 self.addEventListener("fetch", event => {
   const request = event.request;
 
@@ -66,27 +82,48 @@ self.addEventListener("fetch", event => {
 
   const url = new URL(request.url);
 
+
   /*
-   * Never service daily lesson files from the PWA cache.
+   * ========================================
+   * LESSON DATA
+   * ========================================
+   *
+   * Protected lesson files are encrypted
+   * and compressed .dat files.
+   *
+   * They are intentionally excluded from
+   * the service-worker cache.
+   *
+   * Cloudflare CDN caching is independent
+   * of this service-worker behavior.
    */
+
   if (
     url.pathname.includes("/data/") &&
-    url.pathname.endsWith(".json")
+    url.pathname.endsWith(".dat")
   ) {
     event.respondWith(
       fetch(request, {
         cache: "no-store"
       })
     );
+
     return;
   }
 
 
   /*
-   * HTML navigation:
+   * ========================================
+   * HTML NAVIGATION
+   * ========================================
    *
-   * Network first, cached app shell as fallback.
+   * Network first so updated index.html
+   * can be received immediately.
+   *
+   * If the network is unavailable, use
+   * the cached application shell.
    */
+
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request, {
@@ -105,13 +142,18 @@ self.addEventListener("fetch", event => {
 
 
   /*
-   * Static application resources:
+   * ========================================
+   * STATIC APPLICATION RESOURCES
+   * ========================================
    *
-   * Cache first for fast startup.
+   * Cache first for fast application
+   * startup and offline functionality.
    */
+
   event.respondWith(
     caches.match(request)
       .then(cached => {
+
         if (cached) {
           return cached;
         }
@@ -136,6 +178,7 @@ self.addEventListener("fetch", event => {
 
             return response;
           });
+
       })
   );
 });
