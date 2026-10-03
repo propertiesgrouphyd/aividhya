@@ -1,10 +1,6 @@
 name: VIDHWAAN AIVidhya Github DEPLOY
 
 on:
-  push:
-    branches:
-      - main
-
   workflow_dispatch:
 
 permissions:
@@ -13,7 +9,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: vidhwaan-aividhya-deploy
+  group: vidhwaan-vidhyai-deploy
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PROJECT_NAME: vidhwaan-aividhya
+      PROJECT_NAME: vidhwaan-vidhyai
 
     steps:
 
@@ -115,6 +111,7 @@ jobs:
       - name: Prepare Dist
         run: |
           rm -rf dist
+
           mkdir -p dist
 
           cp index.html dist/
@@ -237,6 +234,28 @@ jobs:
 
 
       # ==========================================
+      # MAKE HTML SINGLE LINE
+      # ==========================================
+
+      - name: Make HTML Single Line
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const file = "dist/index.html";
+
+          const content = fs
+            .readFileSync(file, "utf8")
+            .replace(/\r?\n|\r/g, "")
+            .trim();
+
+          fs.writeFileSync(file, content, "utf8");
+
+          console.log("HTML is now single-line.");
+          NODE
+
+
+      # ==========================================
       # MINIFY CSS
       # ==========================================
 
@@ -246,6 +265,28 @@ jobs:
             -O2 \
             dist/main.css \
             -o dist/main.css
+
+
+      # ==========================================
+      # MAKE CSS SINGLE LINE
+      # ==========================================
+
+      - name: Make CSS Single Line
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const file = "dist/main.css";
+
+          const content = fs
+            .readFileSync(file, "utf8")
+            .replace(/\r?\n|\r/g, "")
+            .trim();
+
+          fs.writeFileSync(file, content, "utf8");
+
+          console.log("CSS is now single-line.");
+          NODE
 
 
       # ==========================================
@@ -329,140 +370,41 @@ jobs:
 
 
       # ==========================================
-      # FINAL SINGLE-LINE PRODUCTION FILES
+      # VERIFY HTML AND CSS SINGLE LINE
       # ==========================================
 
-      - name: Make Final Production Files Single Line
-        run: |
-          node --input-type=module <<'NODE'
-          import fs from "node:fs";
-
-          const textFiles = [
-            "dist/index.html",
-            "dist/main.css",
-            "dist/app.js",
-            "dist/sw.js"
-          ];
-
-          for (const file of textFiles) {
-            if (!fs.existsSync(file)) {
-              throw new Error(`Missing production file: ${file}`);
-            }
-
-            const content = fs
-              .readFileSync(file, "utf8")
-              .replace(/\r?\n|\r/g, "")
-              .trim();
-
-            fs.writeFileSync(file, content, "utf8");
-
-            console.log(`Single-line: ${file}`);
-          }
-
-          const manifestFile = "dist/manifest.json";
-
-          if (!fs.existsSync(manifestFile)) {
-            throw new Error(`Missing production file: ${manifestFile}`);
-          }
-
-          const manifest = JSON.parse(
-            fs.readFileSync(manifestFile, "utf8")
-          );
-
-          fs.writeFileSync(
-            manifestFile,
-            JSON.stringify(manifest),
-            "utf8"
-          );
-
-          console.log(`Single-line: ${manifestFile}`);
-
-          const dataDir = "dist/data";
-
-          if (fs.existsSync(dataDir)) {
-            for (const file of fs.readdirSync(dataDir)) {
-              if (!file.endsWith(".dat")) {
-                continue;
-              }
-
-              const filePath = `${dataDir}/${file}`;
-
-              const content = fs
-                .readFileSync(filePath, "utf8")
-                .replace(/\r?\n|\r/g, "")
-                .trim();
-
-              fs.writeFileSync(
-                filePath,
-                content,
-                "utf8"
-              );
-
-              console.log(`Single-line: ${filePath}`);
-            }
-          }
-          NODE
-
-
-      # ==========================================
-      # VERIFY SINGLE-LINE FILES
-      # ==========================================
-
-      - name: Verify Single-Line Production Files
+      - name: Verify HTML and CSS Single Line
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
 
           const files = [
             "dist/index.html",
-            "dist/main.css",
-            "dist/app.js",
-            "dist/sw.js",
-            "dist/manifest.json"
+            "dist/main.css"
           ];
-
-          const dataDir = "dist/data";
-
-          if (fs.existsSync(dataDir)) {
-            for (const file of fs.readdirSync(dataDir)) {
-              if (file.endsWith(".dat")) {
-                files.push(`${dataDir}/${file}`);
-              }
-            }
-          }
 
           for (const file of files) {
             if (!fs.existsSync(file)) {
-              throw new Error(`Missing production file: ${file}`);
+              throw new Error(`Missing file: ${file}`);
             }
 
             const content = fs.readFileSync(file, "utf8");
 
             if (/[\r\n]/.test(content)) {
               throw new Error(
-                `Production file is not single-line: ${file}`
+                `${file} is not single-line.`
               );
             }
 
-            console.log(`✓ Single-line: ${file}`);
+            console.log(
+              `✓ Single-line verified: ${file}`
+            );
           }
 
           console.log(
-            `Single-line verification: PASSED (${files.length} files)`
+            "HTML/CSS single-line verification: PASSED"
           );
           NODE
-
-
-      # ==========================================
-      # FINAL JAVASCRIPT VALIDATION
-      # ==========================================
-
-      - name: Validate Final JavaScript
-        run: |
-          node --check dist/app.js
-          node --check dist/sw.js
-
-          echo "Final JavaScript validation: PASSED"
 
 
       # ==========================================
@@ -488,9 +430,9 @@ jobs:
           JSON_COUNT=$(find dist/data -maxdepth 1 -type f -name 'day-*.json' | wc -l)
           SOURCE_COUNT=$(find data -maxdepth 1 -type f -name 'day-*.json' | wc -l)
 
-          echo "Source JSON files   : $SOURCE_COUNT"
-          echo "Protected DAT files : $DAT_COUNT"
-          echo "JSON in dist/data   : $JSON_COUNT"
+          echo "Source JSON files  : $SOURCE_COUNT"
+          echo "Protected DAT files: $DAT_COUNT"
+          echo "JSON in dist/data  : $JSON_COUNT"
 
           if [ "$DAT_COUNT" -ne "$SOURCE_COUNT" ]; then
             echo "ERROR: Protected lesson count does not match source lesson count."
@@ -520,8 +462,7 @@ jobs:
             dist/index.html \
             dist/main.css \
             dist/app.js \
-            dist/sw.js \
-            dist/manifest.json
+            dist/sw.js
 
           echo
           echo "=============================================="
@@ -587,16 +528,17 @@ jobs:
           echo
           echo "PWA:"
           echo "✓ HTML minified"
+          echo "✓ HTML single-line"
           echo "✓ CSS minified"
+          echo "✓ CSS single-line"
           echo "✓ JavaScript minified"
           echo "✓ JavaScript obfuscated"
-          echo "✓ Lesson JSON compressed"
           echo "✓ Lesson JSON AES-256-GCM protected"
           echo "✓ Plain JSON excluded from dist"
           echo "✓ Only .dat lesson files deployed"
-          echo "✓ Production text files converted to single-line"
-          echo "✓ Single-line files verified"
-          echo "✓ Final JavaScript syntax verified"
+          echo "✓ app.js left in obfuscator output format"
+          echo "✓ sw.js left unchanged after source copy"
+          echo "✓ manifest.json left unchanged"
           echo "✓ Cache busting enabled"
           echo "✓ PWA service worker preserved"
           echo "✓ GitHub Pages deployment complete"
