@@ -1,3 +1,4 @@
+
 function fail(message) {
   throw new Error(`Day JSON validation failed: ${message}`);
 }
@@ -18,10 +19,52 @@ function requireArray(value, field, minimum = 1) {
   }
 }
 
+/*
+ * Reject literal backslash+n sequences in text.
+ *
+ * Real newline characters are allowed.
+ * This check does not modify or normalize content.
+ */
+function validateTextFormatting(value, field = "content") {
+  if (typeof value === "string") {
+    if (/\\n/.test(value)) {
+      fail(
+        `${field} contains a literal \\n sequence. ` +
+        "Use an actual line break or rewrite the text."
+      );
+    }
+
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      validateTextFormatting(item, `${field}[${index}]`);
+    });
+
+    return;
+  }
+
+  if (value && typeof value === "object") {
+    Object.entries(value).forEach(([key, item]) => {
+      validateTextFormatting(item, `${field}.${key}`);
+    });
+  }
+}
+
 export function validateDayContent(content, expectedDay) {
   if (!content || typeof content !== "object") {
     fail("Root content must be an object.");
   }
+
+  /*
+   * Text formatting
+   *
+   * Run this before the other checks so malformed
+   * line-break text is rejected with a clear error.
+   */
+
+  validateTextFormatting(content);
 
   /*
    * Basic identity
