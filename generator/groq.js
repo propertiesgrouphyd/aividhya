@@ -1,3 +1,4 @@
+
 const GROQ_API_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 
@@ -83,6 +84,7 @@ function findUnsupportedScript(
   return null;
 }
 
+
 function validateContentLanguage(
   content,
   contentType
@@ -105,6 +107,103 @@ function validateContentLanguage(
   error.isLanguageValidation = true;
 
   throw error;
+}
+
+
+/* ============================================================
+   LESSON CONTENT VALIDATION
+============================================================ */
+
+function validateLessonParagraphs(
+  lesson
+) {
+  if (
+    !lesson ||
+    typeof lesson !== "object" ||
+    Array.isArray(lesson)
+  ) {
+    throw new Error(
+      "Lesson content must be a JSON object."
+    );
+  }
+
+  if (!Array.isArray(lesson.sections)) {
+    throw new Error(
+      "Lesson validation failed: sections must be an array."
+    );
+  }
+
+  for (
+    let sectionIndex = 0;
+    sectionIndex < lesson.sections.length;
+    sectionIndex++
+  ) {
+    const section =
+      lesson.sections[sectionIndex];
+
+    if (
+      !section ||
+      typeof section !== "object" ||
+      Array.isArray(section)
+    ) {
+      const error =
+        new Error(
+          `sections[${sectionIndex}] must be a valid object.`
+        );
+
+      error.isContentValidation = true;
+
+      throw error;
+    }
+
+    if (!Array.isArray(section.paragraphs)) {
+      const error =
+        new Error(
+          `sections[${sectionIndex}].paragraphs must be an array.`
+        );
+
+      error.isContentValidation = true;
+
+      throw error;
+    }
+
+    if (
+      section.paragraphs.length < 1 ||
+      section.paragraphs.length > 3
+    ) {
+      const error =
+        new Error(
+          `sections[${sectionIndex}].paragraphs must contain 1–3 paragraphs.`
+        );
+
+      error.isContentValidation = true;
+
+      throw error;
+    }
+
+    for (
+      let paragraphIndex = 0;
+      paragraphIndex < section.paragraphs.length;
+      paragraphIndex++
+    ) {
+      const paragraph =
+        section.paragraphs[paragraphIndex];
+
+      if (
+        typeof paragraph !== "string" ||
+        paragraph.trim().length === 0
+      ) {
+        const error =
+          new Error(
+            `Lesson content validation failed: sections[${sectionIndex}].paragraphs[${paragraphIndex}] must be a non-empty string.`
+          );
+
+        error.isContentValidation = true;
+
+        throw error;
+      }
+    }
+  }
 }
 
 
@@ -147,7 +246,8 @@ const LESSON_SCHEMA = {
             minItems: 1,
 
             items: {
-              type: "string"
+              type: "string",
+              minLength: 1
             }
           },
 
@@ -291,7 +391,8 @@ const MCQ_SCHEMA = {
 
 function buildLessonAttemptPrompt(
   prompt,
-  attempt
+  attempt,
+  previousError = ""
 ) {
   if (attempt === 1) {
     return prompt;
@@ -301,9 +402,28 @@ function buildLessonAttemptPrompt(
 
 FINAL CORRECTION FOR THIS RETRY:
 
-Use natural, standard Telugu for the lesson. English/Latin technical terms are allowed where appropriate. Do not use any other writing system.
+The previous lesson generation failed automated validation.
 
-The previous lesson generation did not pass automated validation.
+Validation error:
+${previousError || "The generated lesson did not pass content validation."}
+
+Correct the problem and regenerate the COMPLETE lesson.
+
+PARAGRAPH REQUIREMENTS:
+
+- Every section must contain a paragraphs array.
+- Each paragraphs array must contain 1–3 paragraphs.
+- Every paragraph must be a string.
+- Every paragraph must contain meaningful educational content.
+- Never return an empty string.
+- Never return a string containing only whitespace.
+- Never return null, numbers, objects, or arrays as paragraphs.
+- Do not leave blank placeholders.
+- Review every paragraph before returning the JSON.
+- If a paragraph is invalid, replace it with a complete explanation relevant to that section.
+- Do not merely repeat the same invalid response.
+
+Use natural, standard Telugu. English/Latin technical terms are allowed where appropriate. Do not use any other writing system.
 
 Return exactly ONE JSON object.
 
@@ -388,6 +508,9 @@ MCQ REQUIREMENTS:
   - options
   - answer
   - explanation
+- Every question must be a non-empty string.
+- Every option must be a non-empty string.
+- Every explanation must be a non-empty string.
 - answer MUST be exactly:
   0
   1
@@ -592,7 +715,8 @@ export async function generateLessonWithGroq(
     const attemptPrompt =
       buildLessonAttemptPrompt(
         prompt,
-        attempt
+        attempt,
+        lastError?.message || ""
       );
 
     try {
@@ -601,7 +725,7 @@ export async function generateLessonWithGroq(
           attemptPrompt,
           LESSON_SCHEMA,
           "vidhwaan_aividhya_lesson",
-          "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate natural, standard Telugu. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
+          "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate natural, standard Telugu. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Every paragraph must be a meaningful, non-empty string. Never return empty or whitespace-only paragraphs. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
         );
 
       const content =
@@ -609,16 +733,37 @@ export async function generateLessonWithGroq(
           result
         );
 
-      const parsedContent =
-        JSON.parse(content);
+      let parsedContent;
+
+      try {
+        parsedContent =
+          JSON.parse(content);
+      } catch {
+        const error =
+          new Error(
+            "Groq lesson response was not valid JSON."
+          );
+
+        error.isContentValidation = true;
+
+        throw error;
+      }
 
       validateContentLanguage(
         parsedContent,
         "lesson"
       );
 
+      validateLessonParagraphs(
+        parsedContent
+      );
+
       console.log(
         "✅ Groq lesson generation succeeded."
+      );
+
+      console.log(
+        "✅ Lesson paragraph validation passed."
       );
 
       return content;
@@ -626,18 +771,33 @@ export async function generateLessonWithGroq(
     } catch (error) {
       lastError = error;
 
+      const retryable =
+        error?.isSchemaValidation ||
+        error?.isLanguageValidation ||
+        error?.isContentValidation;
+
       if (
-        (
-          error?.isSchemaValidation ||
-          error?.isLanguageValidation
-        ) &&
+        retryable &&
         attempt < MAX_ATTEMPTS
       ) {
         console.log(
-          "⚠️ Lesson validation failed. Retrying..."
+          `⚠️ Lesson validation failed on attempt ${attempt}/${MAX_ATTEMPTS}. Retrying...`
+        );
+
+        console.log(
+          `Reason: ${error.message}`
         );
 
         continue;
+      }
+
+      if (
+        retryable &&
+        attempt === MAX_ATTEMPTS
+      ) {
+        console.error(
+          "❌ Lesson validation failed after all attempts."
+        );
       }
 
       throw error;
