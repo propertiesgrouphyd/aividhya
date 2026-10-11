@@ -109,6 +109,72 @@ function validateContentLanguage(
 
 
 /* ============================================================
+   LITERAL NEWLINE-SEQUENCE VALIDATION
+============================================================ */
+
+function findLiteralBackslashN(
+  value,
+  path = "content"
+) {
+  if (typeof value === "string") {
+    if (value.includes("\\n")) {
+      return path;
+    }
+
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      const issue = findLiteralBackslashN(
+        value[index],
+        `${path}[${index}]`
+      );
+
+      if (issue) {
+        return issue;
+      }
+    }
+
+    return null;
+  }
+
+  if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      const issue = findLiteralBackslashN(
+        child,
+        `${path}.${key}`
+      );
+
+      if (issue) {
+        return issue;
+      }
+    }
+  }
+
+  return null;
+}
+
+function validateNoLiteralBackslashN(
+  content,
+  contentType
+) {
+  const issue = findLiteralBackslashN(content, contentType);
+
+  if (!issue) {
+    return;
+  }
+
+  const error = new Error(
+    `Groq returned a literal \\n sequence at ${issue}. Use normal sentence punctuation or a genuine line break instead.`
+  );
+
+  error.isFormattingValidation = true;
+  throw error;
+}
+
+
+/* ============================================================
    LESSON SCHEMA
 ============================================================ */
 
@@ -305,6 +371,8 @@ Use natural, standard Telugu for the lesson. English/Latin technical terms are a
 
 The previous lesson generation did not pass automated validation.
 
+Do not include the literal two-character sequence backslash+n (\\n) in any lesson text field. Use normal sentences instead. If a real newline is required in a JSON string, encode it once so JSON parsing produces an actual newline character.
+
 Return exactly ONE JSON object.
 
 Do NOT include:
@@ -368,6 +436,8 @@ FINAL CORRECTION FOR THIS RETRY:
 Use natural, standard Telugu for all MCQ text. English/Latin technical terms are allowed where appropriate. Do not use any other writing system.
 
 The previous MCQ generation did not pass automated validation.
+
+Do not include the literal two-character sequence backslash+n (\\n) in any question, option, or explanation. Use normal sentences instead.
 
 Return exactly ONE JSON object.
 
@@ -617,6 +687,11 @@ export async function generateLessonWithGroq(
         "lesson"
       );
 
+      validateNoLiteralBackslashN(
+        parsedContent,
+        "lesson"
+      );
+
       console.log(
         "✅ Groq lesson generation succeeded."
       );
@@ -629,7 +704,8 @@ export async function generateLessonWithGroq(
       if (
         (
           error?.isSchemaValidation ||
-          error?.isLanguageValidation
+          error?.isLanguageValidation ||
+          error?.isFormattingValidation
         ) &&
         attempt < MAX_ATTEMPTS
       ) {
@@ -698,6 +774,11 @@ export async function generateMCQsWithGroq(
         "mcqs"
       );
 
+      validateNoLiteralBackslashN(
+        parsedContent,
+        "mcqs"
+      );
+
       console.log(
         "✅ Groq MCQ generation succeeded."
       );
@@ -710,7 +791,8 @@ export async function generateMCQsWithGroq(
       if (
         (
           error?.isSchemaValidation ||
-          error?.isLanguageValidation
+          error?.isLanguageValidation ||
+          error?.isFormattingValidation
         ) &&
         attempt < MAX_ATTEMPTS
       ) {
