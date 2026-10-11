@@ -1,3 +1,4 @@
+
 export function buildPrompt(daySyllabus) {
   return `
 You are the content-generation engine for VIDHWAAN AIVidhya,
@@ -16,6 +17,11 @@ IMPORTANT:
 - Do not put any text before or after the JSON.
 - Every required field must contain meaningful content.
 - Never use empty strings for required fields.
+- Never generate empty, whitespace-only, null, or missing paragraph values.
+- Every paragraph must be a complete, meaningful string containing actual lesson content.
+- Check every paragraph individually before returning the JSON.
+- Do not use empty paragraphs as placeholders.
+- Do not return null, numbers, objects, or arrays where strings are required.
 - The application controls the day number and publishing metadata.
 - Do NOT generate day.
 - Do NOT generate courseDate.
@@ -86,6 +92,17 @@ SECTION RULES:
 - Every section must have a non-empty subheading.
 - Subheadings must add useful context; do not repeat the heading.
 - Do not use generic subheadings such as "Introduction", "Example", or "Details".
+- Each section must contain at least 1 and at most 3 paragraphs.
+- Prefer 2 or 3 paragraphs when needed to explain the concept clearly.
+- Every paragraph must contain meaningful educational content.
+- Every paragraph must be a string with at least one non-whitespace character.
+- Never include an empty string such as "" in the paragraphs array.
+- Never include a paragraph containing only spaces, tabs, or line breaks.
+- Never include null or a non-string value in the paragraphs array.
+- Do not create an empty paragraph to meet the required paragraph count.
+- Do not split one sentence into an empty paragraph or leave unfinished text.
+- Before returning the JSON, inspect every paragraph in every section.
+- If any paragraph is empty or contains only whitespace, replace it with a complete, relevant explanation before returning the JSON.
 - Keep each paragraph short.
 - Avoid unnecessary repetition.
 - Examples should be realistic and understandable to beginners.
@@ -171,8 +188,9 @@ SECTIONS:
   - example
 - Every heading must be non-empty.
 - Every subheading must be non-empty.
-- paragraphs must contain at least 1 paragraph.
-- Keep paragraphs concise.
+- paragraphs must contain at least 1 and at most 3 paragraphs.
+- Every paragraph must be a non-empty string containing meaningful content.
+- Every paragraph must remain non-empty after trimming whitespace.
 - Every example must contain:
   - title
   - content
@@ -189,6 +207,18 @@ KEY TAKEAWAYS:
 
 - keyTakeaways must contain at least 3 items.
 - Every item must be a non-empty string.
+
+FINAL SELF-CHECK BEFORE RETURNING JSON:
+
+1. Confirm there are at least 4 sections.
+2. Confirm every section has a heading, subheading, paragraphs, and example.
+3. Confirm every paragraphs array contains 1–3 meaningful paragraphs.
+4. Confirm every paragraph is a string and is not empty after trimming whitespace.
+5. Confirm there are no null, empty, whitespace-only, or non-string paragraph values.
+6. Confirm every example has a non-empty title and content.
+7. Confirm all other required fields contain meaningful content.
+8. If any requirement fails, correct the content before returning the JSON.
+9. Return only the corrected JSON object.
 
 DO NOT GENERATE:
 
