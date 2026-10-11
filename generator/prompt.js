@@ -1,3 +1,4 @@
+
 export function buildPrompt(daySyllabus) {
   return `
 You are the content-generation engine for VIDHWAAN AIVidhya,
@@ -94,6 +95,22 @@ SECTION RULES:
 - Organize sections in a logical learning sequence.
 - The lesson should progress from basic understanding to practical understanding.
 
+TEXT AND LINE-BREAK RULES:
+
+- Write lesson text as natural, readable sentences.
+- Do not insert the literal characters backslash+n (\\n) into any title, introduction, heading, subheading, paragraph, example, practice field, or key takeaway.
+- Do not use the visible text "\\n" as a separator between sentences, prompt examples, or instructions.
+- Do not write examples by concatenating multiple lines with literal backslash+n sequences.
+- When an example demonstrates a prompt, show the prompt and its result as clearly worded sentences within the example content.
+- Prefer ordinary punctuation and complete sentences over artificial line-break markers.
+- If a genuine line break is necessary inside a JSON string, encode it using the standard JSON newline escape exactly once.
+- Remember that JSON parsing converts a correctly encoded newline escape into an actual newline character.
+- Do not double-escape newline characters so that the parsed lesson displays a literal backslash+n.
+- Before returning the JSON, check all generated text fields for accidental literal backslash+n sequences.
+- Correct any such occurrence before returning the JSON.
+- Do not remove meaningful Telugu text or technical content merely to fix formatting.
+- Ensure examples remain technically correct and understandable after formatting.
+
 PRACTICE RULES:
 
 - Give one very small activity the learner can complete immediately.
@@ -177,6 +194,7 @@ SECTIONS:
   - title
   - content
 - Example content must be non-empty.
+- No lesson text field may contain an accidental literal backslash+n sequence.
 
 PRACTICE:
 
@@ -219,6 +237,8 @@ Do not generate aiUpdate.
 Do not generate day, courseDate, or publishAt.
 
 Use only Telugu plus appropriate English/Latin technical terms and necessary proper names. Do not use other writing systems.
+
+Check all lesson text for accidental literal backslash+n sequences before returning the JSON.
 
 Return ONLY valid JSON.
 `;
