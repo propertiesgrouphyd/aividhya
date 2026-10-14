@@ -1,4 +1,3 @@
-
 const GROQ_API_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 
@@ -330,9 +329,9 @@ Return ONLY valid JSON.
    GROQ RATE-LIMIT RETRIES
 ============================================================ */
 
-// If Groq supplies a reset duration, wait for that duration plus a
-// small safety margin. Do not cap or replace Groq's explicit duration.
-// If Groq supplies no duration, use exponential backoff up to 60 seconds.
+// If Groq supplies a reset duration, wait for that duration plus
+// a small safety margin. Do not cap Groq's explicit duration.
+// Without an explicit duration, use exponential backoff up to 60s.
 const MAX_FALLBACK_RATE_LIMIT_WAIT_MS = 60000;
 const RATE_LIMIT_SAFETY_MARGIN_MS = 500;
 const INITIAL_RATE_LIMIT_WAIT_MS = 2000;
@@ -344,12 +343,13 @@ function sleep(ms) {
 function getRateLimitWaitMs(response, rawText, retryNumber) {
   const retryAfter = response.headers.get("retry-after");
 
-  // Retry-After may be a number of seconds or an HTTP date.
+  // Retry-After may be seconds or an HTTP date.
   if (retryAfter) {
     const seconds = Number(retryAfter);
 
     if (Number.isFinite(seconds) && seconds >= 0) {
-      return Math.ceil(seconds * 1000) + RATE_LIMIT_SAFETY_MARGIN_MS;
+      return Math.ceil(seconds * 1000) +
+        RATE_LIMIT_SAFETY_MARGIN_MS;
     }
 
     const retryDate = Date.parse(retryAfter);
@@ -362,8 +362,7 @@ function getRateLimitWaitMs(response, rawText, retryNumber) {
     }
   }
 
-  // Example: "Please try again in 1.1775s".
-  // Supports milliseconds, seconds, minutes, and decimal values.
+  // Examples: "try again in 1.1775s" or "try again in 500ms".
   const retryMessage = rawText.match(
     /try again in\s+(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|sec(?:onds?)?|m|minutes?)?/i
   );
@@ -384,19 +383,59 @@ function getRateLimitWaitMs(response, rawText, retryNumber) {
     return Math.ceil(waitMs) + RATE_LIMIT_SAFETY_MARGIN_MS;
   }
 
-  // No explicit reset time was supplied. Use fallback exponential backoff.
-  // The fallback cap does not apply to a duration explicitly provided by Groq.
+  // No explicit reset time: use fallback exponential backoff.
   return Math.min(
     MAX_FALLBACK_RATE_LIMIT_WAIT_MS,
-    INITIAL_RATE_LIMIT_WAIT_MS * (2 ** Math.min(retryNumber - 1, 10))
+    INITIAL_RATE_LIMIT_WAIT_MS *
+      (2 ** Math.min(retryNumber - 1, 10))
   );
 }
 
+/* ============================================================
+   PERMANENT QUOTA CLASSIFICATION — CORRECTED
+============================================================ */
+
 function isPermanentQuotaLimit(rawText) {
-  // These errors usually cannot be fixed by retrying after a short wait.
-  // Stop instead of looping until the CI job times out.
-  return /tokens? per day|requests? per day|daily limit|daily quota|insufficient_quota|billing|quota exceeded/i.test(
-    rawText
+  let parsed;
+
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    // An unparseable 429 should not be labelled permanent
+    // merely because its raw text contains a word like "billing".
+    return false;
+  }
+
+  const apiError = parsed?.error || {};
+  const code = String(apiError.code || "").toLowerCase();
+  const type = String(apiError.type || "").toLowerCase();
+  const message = String(apiError.message || "").toLowerCase();
+
+  // Ordinary rate-limit errors are temporary. In particular,
+  // Groq TPM/RPM errors commonly include a billing URL in the
+  // message. A billing URL alone does NOT mean the account has
+  // a permanent quota problem.
+  if (
+    code === "rate_limit_exceeded" ||
+    type === "tokens" ||
+    /tokens?\s+per\s+minute/.test(message) ||
+    /requests?\s+per\s+minute/.test(message) ||
+    /try again in\s+\d/.test(message)
+  ) {
+    return false;
+  }
+
+  // Stop only for explicit quota exhaustion or account restrictions.
+  // Do not match the generic word "billing".
+  return (
+    code === "insufficient_quota" ||
+    /tokens?\s+per\s+day/.test(message) ||
+    /requests?\s+per\s+day/.test(message) ||
+    /daily\s+(?:limit|quota)\s+(?:reached|exceeded|exhausted)/.test(message) ||
+    /(?:daily|account)\s+quota\s+(?:reached|exceeded|exhausted)/.test(message) ||
+    /quota exceeded/.test(message) ||
+    /account suspended/.test(message) ||
+    /billing limit reached/.test(message)
   );
 }
 
@@ -489,8 +528,8 @@ async function requestGroq(
         };
       }
 
-      // Keep retrying 429 responses. Groq may return a new reset duration
-      // on each response, so recalculate the wait time every time.
+      // Retry the SAME request after the rate-limit reset.
+      // Do not stop after an arbitrary number of temporary 429s.
       rateLimitRetries++;
 
       const waitMs = getRateLimitWaitMs(
@@ -500,7 +539,7 @@ async function requestGroq(
       );
 
       console.warn(
-        `⏳ Groq rate limit reached (429). Waiting ${(waitMs / 1000).toFixed(2)}s according to Groq's reset information before retry ${rateLimitRetries}...`
+        `⏳ Groq rate limit reached (429). Waiting ${(waitMs / 1000).toFixed(2)}s before retry ${rateLimitRetries}...`
       );
 
       await sleep(waitMs);
