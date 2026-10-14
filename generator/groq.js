@@ -1,3 +1,4 @@
+
 const GROQ_API_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 
@@ -5,7 +6,6 @@ const MODEL =
   process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 const MAX_ATTEMPTS = 3;
-
 
 /* ============================================================
    CONTENT SCRIPT VALIDATION
@@ -16,10 +16,7 @@ const ALLOWED_SCRIPT_LATIN = /\p{Script=Latin}/u;
 const ALLOWED_SCRIPT_COMMON = /\p{Script=Common}/u;
 const ALLOWED_SCRIPT_INHERITED = /\p{Script=Inherited}/u;
 
-function findUnsupportedScript(
-  value,
-  path = "content"
-) {
+function findUnsupportedScript(value, path = "content") {
   if (typeof value === "string") {
     for (const character of value) {
       if (
@@ -41,87 +38,52 @@ function findUnsupportedScript(
   }
 
   if (Array.isArray(value)) {
-    for (
-      let index = 0;
-      index < value.length;
-      index++
-    ) {
-      const issue =
-        findUnsupportedScript(
-          value[index],
-          `${path}[${index}]`
-        );
+    for (let index = 0; index < value.length; index++) {
+      const issue = findUnsupportedScript(
+        value[index],
+        `${path}[${index}]`
+      );
 
-      if (issue) {
-        return issue;
-      }
+      if (issue) return issue;
     }
 
     return null;
   }
 
-  if (
-    value &&
-    typeof value === "object"
-  ) {
-    for (
-      const [key, child]
-      of Object.entries(value)
-    ) {
-      const issue =
-        findUnsupportedScript(
-          child,
-          `${path}.${key}`
-        );
+  if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      const issue = findUnsupportedScript(
+        child,
+        `${path}.${key}`
+      );
 
-      if (issue) {
-        return issue;
-      }
+      if (issue) return issue;
     }
   }
 
   return null;
 }
 
-function validateContentLanguage(
-  content,
-  contentType
-) {
-  const issue =
-    findUnsupportedScript(
-      content,
-      contentType
-    );
+function validateContentLanguage(content, contentType) {
+  const issue = findUnsupportedScript(content, contentType);
 
-  if (!issue) {
-    return;
-  }
+  if (!issue) return;
 
-  const error =
-    new Error(
-      `Groq returned unsupported writing-system content at ${issue.path}: ${issue.character} (${issue.codePoint})`
-    );
+  const error = new Error(
+    `Groq returned unsupported writing-system content at ${issue.path}: ${issue.character} (${issue.codePoint})`
+  );
 
   error.isLanguageValidation = true;
-
   throw error;
 }
-
 
 /* ============================================================
    LITERAL NEWLINE-SEQUENCE VALIDATION
 ============================================================ */
 
-function findLiteralBackslashN(
-  value,
-  path = "content"
-) {
+function findLiteralBackslashN(value, path = "content") {
   if (typeof value === "string") {
-    if (value.includes("\\n")) {
-      return path;
-    }
-
-    return null;
+    return value.includes("\\n") ? path : null;
   }
 
   if (Array.isArray(value)) {
@@ -131,9 +93,7 @@ function findLiteralBackslashN(
         `${path}[${index}]`
       );
 
-      if (issue) {
-        return issue;
-      }
+      if (issue) return issue;
     }
 
     return null;
@@ -146,24 +106,17 @@ function findLiteralBackslashN(
         `${path}.${key}`
       );
 
-      if (issue) {
-        return issue;
-      }
+      if (issue) return issue;
     }
   }
 
   return null;
 }
 
-function validateNoLiteralBackslashN(
-  content,
-  contentType
-) {
+function validateNoLiteralBackslashN(content, contentType) {
   const issue = findLiteralBackslashN(content, contentType);
 
-  if (!issue) {
-    return;
-  }
+  if (!issue) return;
 
   const error = new Error(
     `Groq returned a literal \\n sequence at ${issue}. Use normal sentence punctuation or a genuine line break instead.`
@@ -173,7 +126,6 @@ function validateNoLiteralBackslashN(
   throw error;
 }
 
-
 /* ============================================================
    LESSON SCHEMA
 ============================================================ */
@@ -181,63 +133,33 @@ function validateNoLiteralBackslashN(
 const LESSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-
   properties: {
-    title: {
-      type: "string"
-    },
-
-    introduction: {
-      type: "string"
-    },
-
+    title: { type: "string" },
+    introduction: { type: "string" },
     sections: {
       type: "array",
       minItems: 4,
-
       items: {
         type: "object",
         additionalProperties: false,
-
         properties: {
-          heading: {
-            type: "string"
-          },
-
-          subheading: {
-            type: "string"
-          },
-
+          heading: { type: "string" },
+          subheading: { type: "string" },
           paragraphs: {
             type: "array",
             minItems: 1,
-
-            items: {
-              type: "string"
-            }
+            items: { type: "string" }
           },
-
           example: {
             type: "object",
             additionalProperties: false,
-
             properties: {
-              title: {
-                type: "string"
-              },
-
-              content: {
-                type: "string"
-              }
+              title: { type: "string" },
+              content: { type: "string" }
             },
-
-            required: [
-              "title",
-              "content"
-            ]
+            required: ["title", "content"]
           }
         },
-
         required: [
           "heading",
           "subheading",
@@ -246,37 +168,21 @@ const LESSON_SCHEMA = {
         ]
       }
     },
-
     practice: {
       type: "object",
       additionalProperties: false,
-
       properties: {
-        title: {
-          type: "string"
-        },
-
-        instruction: {
-          type: "string"
-        }
+        title: { type: "string" },
+        instruction: { type: "string" }
       },
-
-      required: [
-        "title",
-        "instruction"
-      ]
+      required: ["title", "instruction"]
     },
-
     keyTakeaways: {
       type: "array",
       minItems: 3,
-
-      items: {
-        type: "string"
-      }
+      items: { type: "string" }
     }
   },
-
   required: [
     "title",
     "introduction",
@@ -286,7 +192,6 @@ const LESSON_SCHEMA = {
   ]
 };
 
-
 /* ============================================================
    MCQ SCHEMA
 ============================================================ */
@@ -294,47 +199,28 @@ const LESSON_SCHEMA = {
 const MCQ_SCHEMA = {
   type: "object",
   additionalProperties: false,
-
   properties: {
     mcqs: {
       type: "array",
       minItems: 5,
       maxItems: 5,
-
       items: {
         type: "object",
         additionalProperties: false,
-
         properties: {
-          question: {
-            type: "string"
-          },
-
+          question: { type: "string" },
           options: {
             type: "array",
             minItems: 4,
             maxItems: 4,
-
-            items: {
-              type: "string"
-            }
+            items: { type: "string" }
           },
-
           answer: {
             type: "integer",
-            enum: [
-              0,
-              1,
-              2,
-              3
-            ]
+            enum: [0, 1, 2, 3]
           },
-
-          explanation: {
-            type: "string"
-          }
+          explanation: { type: "string" }
         },
-
         required: [
           "question",
           "options",
@@ -344,24 +230,15 @@ const MCQ_SCHEMA = {
       }
     }
   },
-
-  required: [
-    "mcqs"
-  ]
+  required: ["mcqs"]
 };
-
 
 /* ============================================================
    LESSON RETRY PROMPT
 ============================================================ */
 
-function buildLessonAttemptPrompt(
-  prompt,
-  attempt
-) {
-  if (attempt === 1) {
-    return prompt;
-  }
+function buildLessonAttemptPrompt(prompt, attempt) {
+  if (attempt === 1) return prompt;
 
   return `${prompt}
 
@@ -385,7 +262,6 @@ Do NOT include:
 The application controls those fields separately.
 
 The lesson MUST contain:
-
 - title
 - introduction
 - sections
@@ -393,41 +269,24 @@ The lesson MUST contain:
 - keyTakeaways
 
 REQUIRED LESSON STRUCTURE:
-
 - sections MUST contain at least 4 sections.
-- Every section MUST contain:
-  - heading
-  - subheading
-  - paragraphs
-  - example
-- Every example MUST contain:
-  - title
-  - content
-- practice MUST contain:
-  - title
-  - instruction
+- Every section MUST contain heading, subheading, paragraphs, and example.
+- Every example MUST contain title and content.
+- practice MUST contain title and instruction.
 - keyTakeaways MUST contain at least 3 strings.
 
 Do not add any properties that are not defined by the schema.
-
 Do not return Markdown.
-
 Return ONLY valid JSON.
 `;
 }
-
 
 /* ============================================================
    MCQ RETRY PROMPT
 ============================================================ */
 
-function buildMCQAttemptPrompt(
-  prompt,
-  attempt
-) {
-  if (attempt === 1) {
-    return prompt;
-  }
+function buildMCQAttemptPrompt(prompt, attempt) {
+  if (attempt === 1) return prompt;
 
   return `${prompt}
 
@@ -439,36 +298,17 @@ The previous MCQ generation did not pass automated validation.
 
 Do not include the literal two-character sequence backslash+n (\\n) in any question, option, or explanation. Use normal sentences instead.
 
-Return exactly ONE JSON object.
-
-The object MUST contain:
-
-mcqs
+Return exactly ONE JSON object containing mcqs.
 
 MCQ REQUIREMENTS:
-
 - mcqs MUST contain EXACTLY 5 questions.
-- NEVER return fewer than 5.
-- NEVER return more than 5.
 - Every MCQ MUST contain exactly 4 options.
-- NEVER provide 3 options.
-- NEVER provide 5 options.
-- Every MCQ MUST contain:
-  - question
-  - options
-  - answer
-  - explanation
-- answer MUST be exactly:
-  0
-  1
-  2
-  or
-  3
+- Every MCQ MUST contain question, options, answer, and explanation.
+- answer MUST be 0, 1, 2, or 3.
 - Exactly one option must be correct.
 - The explanation MUST match the correct answer.
 - Questions must test understanding.
-- Avoid ambiguous questions.
-- Do not create duplicate questions.
+- Avoid ambiguous or duplicate questions.
 - Distribute correct answers naturally.
 
 Do NOT include:
@@ -486,6 +326,79 @@ Return ONLY valid JSON.
 `;
 }
 
+/* ============================================================
+   GROQ RATE-LIMIT RETRIES
+============================================================ */
+
+// If Groq supplies a reset duration, wait for that duration plus a
+// small safety margin. Do not cap or replace Groq's explicit duration.
+// If Groq supplies no duration, use exponential backoff up to 60 seconds.
+const MAX_FALLBACK_RATE_LIMIT_WAIT_MS = 60000;
+const RATE_LIMIT_SAFETY_MARGIN_MS = 500;
+const INITIAL_RATE_LIMIT_WAIT_MS = 2000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRateLimitWaitMs(response, rawText, retryNumber) {
+  const retryAfter = response.headers.get("retry-after");
+
+  // Retry-After may be a number of seconds or an HTTP date.
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.ceil(seconds * 1000) + RATE_LIMIT_SAFETY_MARGIN_MS;
+    }
+
+    const retryDate = Date.parse(retryAfter);
+
+    if (Number.isFinite(retryDate)) {
+      return Math.max(
+        0,
+        retryDate - Date.now()
+      ) + RATE_LIMIT_SAFETY_MARGIN_MS;
+    }
+  }
+
+  // Example: "Please try again in 1.1775s".
+  // Supports milliseconds, seconds, minutes, and decimal values.
+  const retryMessage = rawText.match(
+    /try again in\s+(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|sec(?:onds?)?|m|minutes?)?/i
+  );
+
+  if (retryMessage) {
+    const amount = Number(retryMessage[1]);
+    const unit = (retryMessage[2] || "s").toLowerCase();
+    let waitMs;
+
+    if (/^(ms|millisecond)/.test(unit)) {
+      waitMs = amount;
+    } else if (/^(m|min)/.test(unit)) {
+      waitMs = amount * 60000;
+    } else {
+      waitMs = amount * 1000;
+    }
+
+    return Math.ceil(waitMs) + RATE_LIMIT_SAFETY_MARGIN_MS;
+  }
+
+  // No explicit reset time was supplied. Use fallback exponential backoff.
+  // The fallback cap does not apply to a duration explicitly provided by Groq.
+  return Math.min(
+    MAX_FALLBACK_RATE_LIMIT_WAIT_MS,
+    INITIAL_RATE_LIMIT_WAIT_MS * (2 ** Math.min(retryNumber - 1, 10))
+  );
+}
+
+function isPermanentQuotaLimit(rawText) {
+  // These errors usually cannot be fixed by retrying after a short wait.
+  // Stop instead of looping until the CI job times out.
+  return /tokens? per day|requests? per day|daily limit|daily quota|insufficient_quota|billing|quota exceeded/i.test(
+    rawText
+  );
+}
 
 /* ============================================================
    GENERIC GROQ REQUEST
@@ -497,110 +410,137 @@ async function requestGroq(
   schemaName,
   systemInstruction
 ) {
-  const apiKey =
-    process.env.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "GROQ_API_KEY is not set."
-    );
+    throw new Error("GROQ_API_KEY is not set.");
   }
 
-  const response =
-    await fetch(
-      GROQ_API_URL,
+  const requestBody = JSON.stringify({
+    model: MODEL,
+    temperature: 0.2,
+    reasoning_effort: "medium",
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: schemaName,
+        strict: true,
+        schema
+      }
+    },
+    messages: [
       {
-        method: "POST",
+        role: "system",
+        content: systemInstruction
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  });
 
+  let rateLimitRetries = 0;
+  let networkRetries = 0;
+
+  while (true) {
+    let response;
+    let rawText;
+
+    try {
+      response = await fetch(GROQ_API_URL, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`
         },
+        body: requestBody
+      });
 
-        body: JSON.stringify({
-          model: MODEL,
-
-          temperature: 0.2,
-
-          reasoning_effort: "medium",
-
-          response_format: {
-            type: "json_schema",
-
-            json_schema: {
-              name: schemaName,
-
-              strict: true,
-
-              schema
-            }
-          },
-
-          messages: [
-            {
-              role: "system",
-
-              content:
-                systemInstruction
-            },
-
-            {
-              role: "user",
-
-              content: prompt
-            }
-          ]
-        })
+      rawText = await response.text();
+    } catch (error) {
+      if (networkRetries >= 3) {
+        throw new Error(
+          `Groq network request failed after retries: ${error.message}`
+        );
       }
-    );
 
-  const rawText =
-    await response.text();
+      networkRetries++;
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    rawText
-  };
+      const waitMs = Math.min(
+        15000,
+        2000 * (2 ** (networkRetries - 1))
+      );
+
+      console.warn(
+        `⚠️ Groq network error. Waiting ${(waitMs / 1000).toFixed(1)}s before retry ${networkRetries}/3...`
+      );
+
+      await sleep(waitMs);
+      continue;
+    }
+
+    if (response.status === 429) {
+      if (isPermanentQuotaLimit(rawText)) {
+        return {
+          ok: response.ok,
+          status: response.status,
+          rawText
+        };
+      }
+
+      // Keep retrying 429 responses. Groq may return a new reset duration
+      // on each response, so recalculate the wait time every time.
+      rateLimitRetries++;
+
+      const waitMs = getRateLimitWaitMs(
+        response,
+        rawText,
+        rateLimitRetries
+      );
+
+      console.warn(
+        `⏳ Groq rate limit reached (429). Waiting ${(waitMs / 1000).toFixed(2)}s according to Groq's reset information before retry ${rateLimitRetries}...`
+      );
+
+      await sleep(waitMs);
+      continue;
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      rawText
+    };
+  }
 }
-
 
 /* ============================================================
    PARSE GROQ RESPONSE
 ============================================================ */
 
-function parseGroqResponse(
-  result
-) {
+function parseGroqResponse(result) {
   let parsedError = null;
 
   try {
-    parsedError =
-      JSON.parse(
-        result.rawText
-      );
+    parsedError = JSON.parse(result.rawText);
   } catch {
     // Keep raw response below.
   }
 
   if (!result.ok) {
     const errorMessage =
-      parsedError?.error?.message ||
-      result.rawText;
+      parsedError?.error?.message || result.rawText;
 
-    const error =
-      new Error(
-        `Groq API error ${result.status}: ${result.rawText}`
-      );
+    const error = new Error(
+      `Groq API error ${result.status}: ${result.rawText}`
+    );
 
     error.isSchemaValidation =
       result.status === 400 &&
       (
-        parsedError?.error?.code ===
-          "json_validate_failed" ||
-        errorMessage
-          .toLowerCase()
-          .includes("schema")
+        parsedError?.error?.code === "json_validate_failed" ||
+        errorMessage.toLowerCase().includes("schema")
       );
 
     throw error;
@@ -609,95 +549,57 @@ function parseGroqResponse(
   let apiResponse;
 
   try {
-    apiResponse =
-      JSON.parse(
-        result.rawText
-      );
+    apiResponse = JSON.parse(result.rawText);
   } catch {
-    throw new Error(
-      "Groq returned an invalid API response."
-    );
+    throw new Error("Groq returned an invalid API response.");
   }
 
-  const message =
-    apiResponse?.choices?.[0]?.message;
+  const message = apiResponse?.choices?.[0]?.message;
 
   if (!message) {
-    throw new Error(
-      "Groq response did not contain a message."
-    );
+    throw new Error("Groq response did not contain a message.");
   }
 
   if (
     typeof message.content !== "string" ||
     !message.content.trim()
   ) {
-    throw new Error(
-      "Groq response did not contain JSON content."
-    );
+    throw new Error("Groq response did not contain JSON content.");
   }
 
   return message.content.trim();
 }
 
-
 /* ============================================================
    LESSON GENERATION
 ============================================================ */
 
-export async function generateLessonWithGroq(
-  prompt
-) {
+export async function generateLessonWithGroq(prompt) {
   let lastError = null;
 
-  for (
-    let attempt = 1;
-    attempt <= MAX_ATTEMPTS;
-    attempt++
-  ) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     console.log(
       `🤖 Groq lesson generation attempt ${attempt}/${MAX_ATTEMPTS}`
     );
 
-    const attemptPrompt =
-      buildLessonAttemptPrompt(
-        prompt,
-        attempt
-      );
+    const attemptPrompt = buildLessonAttemptPrompt(prompt, attempt);
 
     try {
-      const result =
-        await requestGroq(
-          attemptPrompt,
-          LESSON_SCHEMA,
-          "vidhwaan_aividhya_lesson",
-          "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate natural, standard Telugu. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
-        );
-
-      const content =
-        parseGroqResponse(
-          result
-        );
-
-      const parsedContent =
-        JSON.parse(content);
-
-      validateContentLanguage(
-        parsedContent,
-        "lesson"
+      const result = await requestGroq(
+        attemptPrompt,
+        LESSON_SCHEMA,
+        "vidhwaan_aividhya_lesson",
+        "You are VIDHWAAN AIVidhya's professional Telugu educational lesson generator. Generate natural, standard Telugu. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Never add extra fields. Never omit required fields. Do not generate MCQs, aiUpdate, day, courseDate, or publishAt."
       );
 
-      validateNoLiteralBackslashN(
-        parsedContent,
-        "lesson"
-      );
+      const content = parseGroqResponse(result);
+      const parsedContent = JSON.parse(content);
 
-      console.log(
-        "✅ Groq lesson generation succeeded."
-      );
+      validateContentLanguage(parsedContent, "lesson");
+      validateNoLiteralBackslashN(parsedContent, "lesson");
 
+      console.log("✅ Groq lesson generation succeeded.");
       return content;
-
     } catch (error) {
       lastError = error;
 
@@ -709,10 +611,7 @@ export async function generateLessonWithGroq(
         ) &&
         attempt < MAX_ATTEMPTS
       ) {
-        console.log(
-          "⚠️ Lesson validation failed. Retrying..."
-        );
-
+        console.log("⚠️ Lesson validation failed. Retrying...");
         continue;
       }
 
@@ -727,64 +626,36 @@ export async function generateLessonWithGroq(
   );
 }
 
-
 /* ============================================================
    MCQ GENERATION
 ============================================================ */
 
-export async function generateMCQsWithGroq(
-  prompt
-) {
+export async function generateMCQsWithGroq(prompt) {
   let lastError = null;
 
-  for (
-    let attempt = 1;
-    attempt <= MAX_ATTEMPTS;
-    attempt++
-  ) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     console.log(
       `🤖 Groq MCQ generation attempt ${attempt}/${MAX_ATTEMPTS}`
     );
 
-    const attemptPrompt =
-      buildMCQAttemptPrompt(
-        prompt,
-        attempt
-      );
+    const attemptPrompt = buildMCQAttemptPrompt(prompt, attempt);
 
     try {
-      const result =
-        await requestGroq(
-          attemptPrompt,
-          MCQ_SCHEMA,
-          "vidhwaan_aividhya_mcqs",
-          "You are VIDHWAAN AIVidhya's professional Telugu examination-question generator. Generate exactly five high-quality MCQs in natural, standard Telugu based only on the supplied lesson. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Every MCQ must have exactly four options and exactly one correct answer. Never add extra fields."
-        );
-
-      const content =
-        parseGroqResponse(
-          result
-        );
-
-      const parsedContent =
-        JSON.parse(content);
-
-      validateContentLanguage(
-        parsedContent,
-        "mcqs"
+      const result = await requestGroq(
+        attemptPrompt,
+        MCQ_SCHEMA,
+        "vidhwaan_aividhya_mcqs",
+        "You are VIDHWAAN AIVidhya's professional Telugu examination-question generator. Generate exactly five high-quality MCQs in natural, standard Telugu based only on the supplied lesson. English/Latin technical terms are allowed where appropriate; do not use any other writing system. Follow the JSON schema exactly. Every MCQ must have exactly four options and exactly one correct answer. Never add extra fields."
       );
 
-      validateNoLiteralBackslashN(
-        parsedContent,
-        "mcqs"
-      );
+      const content = parseGroqResponse(result);
+      const parsedContent = JSON.parse(content);
 
-      console.log(
-        "✅ Groq MCQ generation succeeded."
-      );
+      validateContentLanguage(parsedContent, "mcqs");
+      validateNoLiteralBackslashN(parsedContent, "mcqs");
 
+      console.log("✅ Groq MCQ generation succeeded.");
       return content;
-
     } catch (error) {
       lastError = error;
 
@@ -796,10 +667,7 @@ export async function generateMCQsWithGroq(
         ) &&
         attempt < MAX_ATTEMPTS
       ) {
-        console.log(
-          "⚠️ MCQ validation failed. Retrying..."
-        );
-
+        console.log("⚠️ MCQ validation failed. Retrying...");
         continue;
       }
 
@@ -814,7 +682,6 @@ export async function generateMCQsWithGroq(
   );
 }
 
-
 /* ============================================================
    BACKWARD-COMPATIBILITY EXPORT
 ============================================================ */
@@ -825,15 +692,10 @@ export async function generateMCQsWithGroq(
  * immediately.
  *
  * New generation flow should use:
- *
  * generateLessonWithGroq()
  * generateMCQsWithGroq()
  */
 
-export async function generateWithGroq(
-  prompt
-) {
-  return generateLessonWithGroq(
-    prompt
-  );
+export async function generateWithGroq(prompt) {
+  return generateLessonWithGroq(prompt);
 }
