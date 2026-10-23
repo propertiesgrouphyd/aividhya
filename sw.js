@@ -1,4 +1,4 @@
-const CACHE_NAME = "vidhwaan-aividhya-images-v21";
+const CACHE_NAME = "vidhwaan-aividhya-images-v22";
 
 /*
  * ==========================================
