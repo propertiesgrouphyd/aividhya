@@ -1,0 +1,128 @@
+{
+  "day": 98,
+  "courseDate": "2026-11-25",
+  "publishAt": "2026-11-25T06:00:00+05:30",
+  "title": "Neural Network Training Loop: పూర్తి శిక్షణ చక్రం",
+  "introduction": "ఈ పాఠంలో మీరు forward propagation, loss లెక్కింపు, backpropagation, optimizer నవీకరణలను కలిపి, బాచ్‌లు మరియు epochs ద్వారా పునరావృతమయ్యే పూర్తి న్యూరల్ నెట్‌వర్క్ శిక్షణ చక్రాన్ని అర్థం చేసుకుంటారు.",
+  "sections": [
+    {
+      "heading": "Forward Pass ను అర్థం చేసుకోవడం",
+      "subheading": "ఇన్‌పుట్ నుండి అవుట్‌పుట్ వరకు ఎలా లెక్కించబడుతుంది",
+      "paragraphs": [
+        "forward pass అనేది ఇన్‌పుట్ డేటాను నెట్‌వర్క్‌లోని ప్రతి లేయర్ ద్వారా పంపి, చివరికి అంచనా (prediction) పొందే ప్రక్రియ.",
+        "ప్రతి లేయర్‌లో బరువు (weight) మరియు బైస్ (bias) లను గుణించి, యాక్టివేషన్ ఫంక్షన్ ద్వారా అవుట్‌పుట్‌ను పొందుతారు."
+      ],
+      "example": {
+        "title": "Forward Pass ఉదాహరణ",
+        "content": "ఒక సింపుల్ నెట్‌వర్క్‌లో 2 ఇన్‌పుట్ ఫీచర్లు x1, x2, బరువులు w1=0.5, w2=‑0.3, బైస్ b=0.1 ఉంటే, అవుట్‌పుట్ y = sigmoid(0.5·x1 + (‑0.3)·x2 + 0.1) గా లెక్కించబడుతుంది."
+      }
+    },
+    {
+      "heading": "Loss లెక్కింపు",
+      "subheading": "అంచనా మరియు నిజ విలువల మధ్య తేడా కొలవడం",
+      "paragraphs": [
+        "loss అనేది మోడల్ అంచనా మరియు నిజ విలువ మధ్య పొరపాటును పరిమాణంగా చూపుతుంది.",
+        "సాధారణంగా Mean Squared Error (MSE) లేదా Cross‑Entropy loss ఉపయోగిస్తారు."
+      ],
+      "example": {
+        "title": "Loss లెక్కింపు ఉదాహరణ",
+        "content": "ఒక నమూనా కోసం నిజ విలువ y=1, అంచనా ŷ=0.8 అయితే, MSE loss = (1‑0.8)² = 0.04 గా లెక్కించబడుతుంది."
+      }
+    },
+    {
+      "heading": "Backpropagation ద్వారా గ్రాడియెంట్ లెక్కింపు",
+      "subheading": "లోస్ నుండి బరువుల వరకు గ్రాడియెంట్‌లు ఎలా పంపబడతాయి",
+      "paragraphs": [
+        "backpropagation అనేది loss యొక్క ప్రతి బరువు పట్ల భాగీయ వ్యుత్పన్నాన్ని (gradient) లెక్కించే అల్గోరిథమ్.",
+        "ఈ గ్రాడియెంట్‌లు బరువులను ఎలా సవరించాలో సూచిస్తాయి."
+      ],
+      "example": {
+        "title": "Backpropagation ఉదాహరణ",
+        "content": "MSE loss L = (y‑ŷ)² కోసం, బరువు w కు gradient = ∂L/∂w = 2·(ŷ‑y)·∂ŷ/∂w. ఇది weight update లో ఉపయోగించబడుతుంది."
+      }
+    },
+    {
+      "heading": "Optimizer నవీకరణ & Epoch‑Batch చక్రం",
+      "subheading": "గ్రాడియెంట్‌లను ఉపయోగించి బరువులను నవీకరించడం మరియు శిక్షణను పునరావృతం చేయడం",
+      "paragraphs": [
+        "optimizer (ఉదా: SGD) gradient ను తీసుకుని, learning rate ద్వారా బరువులను నవీకరిస్తుంది.",
+        "ప్రతి batch తర్వాత బరువులు నవీకరించబడతాయి, అన్ని batches పూర్తయ్యాక ఒక epoch ముగుస్తుంది; ఈ ప్రక్రియ అనేక epochs వరకు పునరావృతమవుతుంది."
+      ],
+      "example": {
+        "title": "Training Loop ఉదాహరణ",
+        "content": "for epoch in range(5):\n    for batch in data_loader:\n        preds = model.forward(batch.inputs)\n        loss = loss_fn(preds, batch.labels)\n        grads = model.backprop(loss)\n        optimizer.step(grads)\n    print('Epoch', epoch, 'completed')"
+      }
+    }
+  ],
+  "practice": {
+    "title": "సింపుల్ Training Loop రాయండి",
+    "instruction": "ఒక epoch కోసం, forward pass, loss లెక్కింపు, backpropagation, optimizer step అనే నాలుగు దశలను వరుసగా వ్రాసి, మీ స్వంత పదాల్లో సంక్షిప్తంగా వివరించండి."
+  },
+  "keyTakeaways": [
+    "Forward pass ద్వారా ఇన్‌పుట్‌ను అంచనాగా మార్చుతారు.",
+    "Loss మోడల్ పొరపాటును పరిమాణంగా చూపుతుంది, backpropagation ద్వారా గ్రాడియెంట్‌లు లభిస్తాయి.",
+    "Optimizer gradient ను learning rate తో కలిపి బరువులను నవీకరిస్తుంది, ఇది ప్రతి batch మరియు epoch లో పునరావృతమవుతుంది."
+  ],
+  "mcqs": [
+    {
+      "question": "ఒక సింపుల్ నెట్‌వర్క్‌లో 2 ఇన్‌పుట్‌లు x1, x2, బరువులు w1=0.5, w2=-0.3, బైస్ b=0.1 ఉంటే, sigmoid యాక్టివేషన్ తర్వాత అవుట్‌పుట్ y ను ఎలా లెక్కిస్తారు?",
+      "options": [
+        "y = sigmoid(0.5·x1 + (-0.3)·x2 + 0.1)",
+        "y = sigmoid(0.5·x1 - 0.3·x2 - 0.1)",
+        "y = sigmoid(0.5·x1 + 0.3·x2 + 0.1)",
+        "y = sigmoid(0.5·x1 - 0.3·x2 + 0.1)"
+      ],
+      "answer": 0,
+      "explanation": "సూత్రంలో బరువు w2 విలువ -0.3, కాబట్టి అది -0.3·x2 గా ఉంటుంది; బైస్ 0.1 జోడించాలి, అందువల్ల మొదటి ఎంపిక సరైనది."
+    },
+    {
+      "question": "MSE loss L = (y‑ŷ)² కోసం, నిజ విలువ y = 1, అంచనా ŷ = 0.8 అయితే L విలువ ఎంత?",
+      "options": [
+        "0.04",
+        "0.2",
+        "0.04²",
+        "0.36"
+      ],
+      "answer": 0,
+      "explanation": "(1‑0.8) = 0.2, దాని చదరపు విలువ 0.04, కాబట్టి మొదటి ఎంపిక సరైనది."
+    },
+    {
+      "question": "Backpropagation లో MSE loss కు weight w కు gradient ను లెక్కించే సూత్రం ఏది?",
+      "options": [
+        "∂L/∂w = 2·(ŷ‑y)·∂ŷ/∂w",
+        "∂L/∂w = (y‑ŷ)·∂ŷ/∂w",
+        "∂L/∂w = 2·(y‑ŷ)·w",
+        "∂L/∂w = (ŷ‑y)·w"
+      ],
+      "answer": 0,
+      "explanation": "MSE L = (y‑ŷ)² యొక్క భాగీయ వ్యుత్పన్నం 2·(ŷ‑y)·∂ŷ/∂w, ఇది మొదటి ఎంపికలో ఉంది."
+    },
+    {
+      "question": "SGD optimizer లో weight w ను నవీకరించే నియమం ఏది?",
+      "options": [
+        "w_new = w_old - learning_rate × gradient",
+        "w_new = w_old + learning_rate × gradient",
+        "w_new = w_old - gradient / learning_rate",
+        "w_new = w_old + gradient / learning_rate"
+      ],
+      "answer": 0,
+      "explanation": "SGD లో gradient ను learning rate తో గుణించి, ప్రస్తుత weight నుండి తీసివేస్తారు; మొదటి ఎంపిక సరైనది."
+    },
+    {
+      "question": "Training loop లో batch, epoch, optimizer update మధ్య సంబంధాన్ని సరైనంగా వివరిస్తున్నది ఏది?",
+      "options": [
+        "ప్రతి batch తర్వాత optimizer weight ను నవీకరిస్తుంది, అన్ని batches పూర్తయ్యాక ఒక epoch ముగుస్తుంది.",
+        "ప్రతి epoch తర్వాత మాత్రమే optimizer weight ను నవీకరిస్తుంది, batch లు weight ను మార్చవు.",
+        "optimizer weight ను ఒక్కసారి మాత్రమే మొత్తం డేటా మీద నవీకరిస్తుంది, batch లేదా epoch లకు సంబంధం లేదు.",
+        "batch లు weight ను నవీకరించవు, epoch లు మాత్రమే optimizer ను పిలుస్తాయి."
+      ],
+      "answer": 0,
+      "explanation": "లెర్నింగ్ ప్రక్రియలో ప్రతి batch తరువాత gradient లెక్కించి optimizer weight ను నవీకరిస్తుంది; అన్ని batches పూర్తయ్యాక epoch ముగుస్తుంది, ఇది మొదటి ఎంపికలో చెప్పబడింది."
+    }
+  ],
+  "aiUpdate": {
+    "enabled": false,
+    "title": "AI Update",
+    "items": []
+  }
+}
